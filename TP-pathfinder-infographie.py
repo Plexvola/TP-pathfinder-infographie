@@ -9,9 +9,45 @@ taille_case = 30
 nombre_cases = 30  # Nombre de cases par ligne et par colonne
 cases = []  # Liste contenant les objets cases
 poids = []  # Liste contenant les nombres dans les cases
-case_depart = 0  # Variable qui detecte la presence d'une case depart
-case_fin = 0  # Variable qui detecte la presence d'une case fin
+case_depart = False  # Variable qui detecte la presence d'une case depart
+case_fin = False  # Variable qui detecte la presence d'une case fin
 total = 0  # total du chemin
+
+
+def rgb_hack(rgb):
+    """Transforme un nombre en sa représentation RGB."""
+    return "#%02x%02x%02x" % rgb
+
+
+class Case:
+    """Classe de la case."""
+
+    def __init__(self, x, y, poids, C):
+        """Initialise la case."""
+        self.x = x
+        self.y = y
+        self.couleur = rgb_hack((255, 255 - 15 * poids, 255))
+        self.poids = poids
+        self.canvas = C
+
+    def render(self, taille_case):
+        """Affiche la case à l'écran."""
+        self.id = self.canvas.create_rectangle(
+            self.x * taille_case + 2,
+            self.y * taille_case + 2,
+            (self.x + 1) * taille_case + 2,
+            (self.y + 1) * taille_case + 2
+        )
+        self.canvas.create_text(
+            self.x * taille_case + taille_case/2,
+            self.y * taille_case + taille_case/2,
+            text=self.poids
+        )
+        self.canvas.itemconfigure(
+            self.id, outline="black",
+            fill=self.couleur,
+        )
+
 
 # ----- Création de la fenêtre ----- #
 fen = tk.Tk()
@@ -24,47 +60,14 @@ canvas_cases.grid(row=0, column=0, columnspan=2, padx=3, pady=3)
 
 # ----- Création des figures ----- #
 for ligne in range(nombre_cases):
-    bloc = []
+    cases.append([])
     for colonne in range(nombre_cases):  # Conception des cases d'une ligne
-        bloc.append(
-            canvas_cases.create_rectangle(
-                colonne * taille_case + 2,
-                ligne * taille_case + 2,
-                (colonne + 1) * taille_case + 2,
-                (ligne + 1) * taille_case + 2,
-            )
-        )
-    cases.append(bloc)  # Ajout de la ligne à la liste principale
-
-# def click(event):
-# x, y = event.x, event.y
-# print('{},{}'.format(x,y))
-
-
-def rgb_hack(rgb):
-    """Transforme un nombre en sa représentation RGB."""
-    return "#%02x%02x%02x" % rgb
+        case = Case(ligne, colonne, randrange(1, 17), canvas_cases)
+        case.render(taille_case)
+        cases[ligne].append(case)
 
 
 # ----- Création des nombres dans les cases colonne par colonne ----- #
-
-l = taille_case / 2
-L = taille_case / 2
-for lign in range(taille_case):
-    numb = []
-    for colonn in range(taille_case):
-        num = randrange(1, 17)
-        numb.append(num)
-        canvas_cases.create_text(L, l, text=num)
-        canvas_cases.itemconfigure(
-            cases[colonn][lign],
-            outline="black",
-            fill=rgb_hack((255, 255 - 15 * num, 255)),
-        )
-        l += taille_case
-    poids.append(numb)
-    L += taille_case
-    l = taille_case / 2
 
 
 def depart(event):
@@ -73,11 +76,10 @@ def depart(event):
     x = event.x
     y = event.y
     canvas_cases.itemconfigure(
-        cases[y // taille_case][x // taille_case], outline="black",
+        cases[x // taille_case][y // taille_case].id, outline="black",
         fill=rgb_hack((0, 255, 0))
     )
-    print(poids[x // taille_case][y // taille_case])
-    total += poids[x // taille_case][y // taille_case]
+    total += cases[x // taille_case][y // taille_case].poids
 
 
 def fin(event):
@@ -86,10 +88,10 @@ def fin(event):
     x = event.x
     y = event.y
     canvas_cases.itemconfigure(
-        cases[y // taille_case][x // taille_case], outline="black",
+        cases[x // taille_case][y // taille_case].id, outline="black",
         fill=rgb_hack((255, 0, 0))
     )
-    total += poids[x // taille_case][y // taille_case]
+    total += cases[x // taille_case][y // taille_case].poids
 
 
 def chemin(event):
@@ -97,24 +99,25 @@ def chemin(event):
     global total
     x = event.x
     y = event.y
-    if canvas_cases.itemcget(cases[y // taille_case][x // taille_case],
+    if canvas_cases.itemcget(cases[x // taille_case][y // taille_case].id,
                              "fill") == rgb_hack((255, 0, 0)):
         print("vous etes arrivé, vous avez parcouru un total de", total)
-    elif canvas_cases.itemcget(cases[y // taille_case][x // taille_case],
+    elif canvas_cases.itemcget(cases[x // taille_case][y // taille_case].id,
                                "fill") == rgb_hack((0, 255, 0)):
         messagebox.showwarning(
             title="case depart", message="ceci est la case de depart"
         )
-    elif canvas_cases.itemcget(cases[y // taille_case][x // taille_case],
+    elif canvas_cases.itemcget(cases[x // taille_case][y // taille_case].id,
                                "fill") == rgb_hack((255, 128, 0)):
         messagebox.showwarning(
             title="case depart", message="vous êtes deja passer par là"
         )
     else:
         canvas_cases.itemconfigure(
-            cases[y // taille_case][x // taille_case], outline="black", fill=rgb_hack((255, 128, 0))
+            cases[x // taille_case][y // taille_case].id, outline="black",
+            fill=rgb_hack((255, 128, 0))
         )
-        total += poids[x // taille_case][y // taille_case]
+        total += cases[x // taille_case][y // taille_case].poids
 
 
 def clic_case(event):
@@ -132,8 +135,6 @@ def clic_case(event):
 
 
 fen.bind("<Button-1>", clic_case)
-fen.bind("<Control-KeyPress-d>", depart)
-fen.bind("<Control-KeyPress-f>", fin)
 
 # ----- Programme principal ----- #
 fen.mainloop()  # Boucle d'attente des événements
