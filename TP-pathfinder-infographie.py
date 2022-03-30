@@ -4,8 +4,8 @@ from random import randrange
 from tkinter import messagebox
 
 ##----- Variables globales -----##
-c = 30                       # Longueur d'un côté d'une case
-n = 30                       # Nombre de cases par ligne et par colonne
+c = 25                         # Longueur d'un côté d'une case
+n = 25                        # Nombre de cases par ligne et par colonne
 cases = []                      # Liste contenant les objets cases
 nombres = []                    #Liste contenant les nombres dans les cases
 casedeb = 0                     #Variable qui detecte la presence d'une case depart
@@ -21,11 +21,12 @@ bloc_chemin = Canvas(fen, width = n*c, height = n*c, bg = 'white')
 bloc_chemin.grid(row = 0, column = 0, columnspan=2, padx=3, pady=3)
 
 ##----- Création des figures -----##
-for ligne in range(n):          # Les cases de chaque ligne seront stockées dans "transit"
-    bloc=[]
-    for colonne in range(n):    # Conception des cases d'une ligne
-        bloc.append(bloc_chemin.create_rectangle(colonne*c+2, ligne*c+2, (colonne+1)*c+2, (ligne+1)*c+2))
-    cases.append(bloc)       # Ajout de la ligne à la liste principale
+def cubes():
+    for ligne in range(n):          # Les cases de chaque ligne seront stockées dans "bloc"
+        bloc=[]
+        for colonne in range(n):    # Conception des cases d'une ligne
+            bloc.append(bloc_chemin.create_rectangle(colonne*c+2, ligne*c+2, (colonne+1)*c+2, (ligne+1)*c+2))
+        cases.append(bloc)       # Ajout de la ligne à la liste principale
 
 #def click(event):
     #x, y = event.x, event.y
@@ -35,23 +36,33 @@ for ligne in range(n):          # Les cases de chaque ligne seront stockées dan
 def rgb_hack(rgb):
     return "#%02x%02x%02x" % rgb
 
-
-
 ##----- Création des nombres dans les cases colonne par colonne -----##
 
-l=c/2
-L=c/2
-for lign in range(c):
-    numb=[]
-    for colonn in range(c):
-        num=randrange(1,17)
-        numb.append(num)
-        bloc_chemin.create_text(L, l, text=num)
-        bloc_chemin.itemconfigure(cases[colonn][lign], outline='black', fill=rgb_hack((255, 255-15*num, 255)))
-        l+=c
-    nombres.append(numb)
-    L+=c
+def numero():
     l=c/2
+    L=c/2
+    for lign in range(c):
+        numb=[]
+        for colonn in range(c):
+            num=randrange(1,17)
+            numb.append(num)
+            bloc_chemin.create_text(L, l, text=num, tags=('lol'))
+            bloc_chemin.itemconfigure(cases[colonn][lign], outline='black', fill=rgb_hack((255, 255-15*num, 255)))
+            l+=c
+        nombres.append(numb)
+        L+=c
+        l=c/2
+
+def Generate():
+    global casedeb,casefin,total
+    casedeb = 0
+    casefin = 0
+    total = 0
+    bloc_chemin.delete('lol')
+    cubes()
+    numero()
+
+
 
 
 def depart(event):
@@ -67,7 +78,7 @@ def depart(event):
         total+=nombres[x//c][y//c]
 
 def fin(event):
-    global total,casedeb, casefin
+    global total, casedeb, casefin
     x=event.x
     y=event.y
     if casedeb == 0:
@@ -94,12 +105,16 @@ def chemin(event):
         total+=nombres[x//c][y//c]
 
 
+frame_bouton=Frame(fen, height=50, width=100)
+frame_bouton.grid()
+
+Generate = Button(fen, text='Generate', command=Generate)
+Generate.grid()
 
 
 
-fen.bind('<Button-1>', chemin)
-fen.bind('<Control-KeyPress-d>',depart)
-fen.bind('<Control-KeyPress-f>',fin)
+fen.bind('<Button-2>',depart)
+fen.bind('<Button-3>',fin)
 
 ##----- Programme principal -----##
 fen.mainloop()                  # Boucle d'attente des événements
