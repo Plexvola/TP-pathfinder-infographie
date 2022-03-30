@@ -8,8 +8,8 @@ c = 30                       # Longueur d'un côté d'une case
 n = 30                       # Nombre de cases par ligne et par colonne
 cases = []                      # Liste contenant les objets cases
 nombres = []                    #Liste contenant les nombres dans les cases
-casedeb = 0
-casefin = 0
+casedeb = 0                     #Variable qui detecte la presence d'une case depart
+casefin = 0                     #Variable qui detecte la presence d'une case fin
 total = 0                       #total du chemin
 
 ##----- Création de la fenêtre -----##
@@ -70,15 +70,21 @@ def fin(event):
     global total,casedeb, casefin
     x=event.x
     y=event.y
-    bloc_chemin.itemconfigure(cases[y//c][x//c], outline='black', fill=rgb_hack((255,0,0)))
-    total+=nombres[x//c][y//c]
+    if casedeb == 0:
+        messagebox.showwarning(title='case depart', message='Veuillez commencer par definir une case depart')
+    elif casefin == 1:
+        messagebox.showwarning(title='case fin', message='case fin deja initialisé')
+    else:
+        bloc_chemin.itemconfigure(cases[y//c][x//c], outline='black', fill=rgb_hack((255,0,0)))
+        casefin += 1
+        total+=nombres[x//c][y//c]
 
 def chemin(event):
     global total,casedeb, casefin
     x=event.x
     y=event.y
     if bloc_chemin.itemcget(cases[y//c][x//c],'fill') == rgb_hack((255,0,0)):
-        print('fin')
+        print('vous etes arrivé, vous avez parcouru un total de',total)
     elif bloc_chemin.itemcget(cases[y//c][x//c],'fill') == rgb_hack((0,255,0)):
         messagebox.showwarning(title='case depart', message='ceci est la case de depart')
     elif bloc_chemin.itemcget(cases[y//c][x//c],'fill') == rgb_hack((255,128,0)):
@@ -86,7 +92,6 @@ def chemin(event):
     else:
         bloc_chemin.itemconfigure(cases[y//c][x//c], outline='black', fill=rgb_hack((255,128,0)))
         total+=nombres[x//c][y//c]
-    print(total)
 
 
 
