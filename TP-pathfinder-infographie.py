@@ -79,17 +79,21 @@ class Grille:
         """
         self.taille = taille
         self.dim = dimension
-        self.cases = [[] for _ in range(dimension)]
         self.total = 0
         self.canvas = canvas
 
+        self.generate()
+
+    def generate(self):
+        """Génère la grille et réinitialise ses positions."""
         self.case_d = False
         self.case_a = False
 
-        for ligne in range(dimension):
-            for colonne in range(dimension):
+        self.cases = [[] for _ in range(self.dim)]
+        for ligne in range(self.dim):
+            for colonne in range(self.dim):
                 case = Case(ligne, colonne, randrange(1, 17))
-                case.render(taille, canvas)
+                case.render(self.taille, self.canvas)
                 self.cases[ligne].append(case)
 
     def depart(self, event):
@@ -137,10 +141,6 @@ class Grille:
             self.depart(event)
             self.case_d = True
 
-def Generate():
-    Grille(taille_case, nombre_cases, canvas_cases)
-
-
 
 # ----- Programme principal ----- #
 
@@ -157,18 +157,12 @@ canvas_cases.grid(row=0, column=0, columnspan=2, padx=3, pady=3)
 g = Grille(taille_case, nombre_cases, canvas_cases)
 
 
-frame_bouton=tk.Frame(fen, height=50, width=100)
+frame_bouton = tk.Frame(fen, height=50, width=100)
 frame_bouton.grid()
 
-Generate = tk.Button(fen, text='Generate', command=Generate)
-Generate.grid()
+GenButton = tk.Button(fen, text='Generate', command=g.generate)
+GenButton.grid()
 
 fen.bind("<Button-3>", g.clic_case)
 
 fen.mainloop()  # Boucle d'attente des événements
-
-
-# couleur : 15 couleurs (255 : 17 = 15)
-# couleur : a = (0 -> 15) (RGB : 0,0, a * 17)
-
-# https://openclassrooms.com/forum/sujet/tkinter-lier-des-labels-avec-un-dictionnaire
