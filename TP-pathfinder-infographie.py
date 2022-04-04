@@ -21,6 +21,7 @@ class Case:
         """Initialise la case."""
         self.x = x
         self.y = y
+        self.bord = rgb_hack((50,50,50))
         self.couleur = rgb_hack((255, 255 - 15 * poids, 255))
         self.poids = poids
         self.etat = "VIDE"
@@ -33,15 +34,25 @@ class Case:
             (self.x + 1) * taille_case + 2,
             (self.y + 1) * taille_case + 2
         )
-        canvas.create_text(
-            self.x * taille_case + taille_case/2,
-            self.y * taille_case + taille_case/2,
-            text=self.poids
-        )
-        canvas.itemconfigure(
-            self.id, outline="black",
-            fill=self.couleur,
-        )
+
+        if self.poids == 1000:
+            canvas.itemconfigure(
+                self.id, outline="black",
+                fill=self.bord,
+                )
+
+        else:
+            canvas.create_text(
+                self.x * taille_case + taille_case/2,
+                self.y * taille_case + taille_case/2,
+                text=self.poids
+                )
+
+            canvas.itemconfigure(
+                self.id, outline="black",
+                fill=self.couleur,
+                )
+
 
     def depart(self, canvas):
         """Définit la case comme la case de départ."""
@@ -88,13 +99,32 @@ class Grille:
         """Génère la grille et réinitialise ses positions."""
         self.case_d = False
         self.case_a = False
+        self.total = 0
 
         self.cases = [[] for _ in range(self.dim)]
         for ligne in range(self.dim):
             for colonne in range(self.dim):
-                case = Case(ligne, colonne, randrange(1, 17))
-                case.render(self.taille, self.canvas)
-                self.cases[ligne].append(case)
+                if ligne == 0:
+                    case=Case(ligne, colonne, 1000)
+                    case.render(self.taille, self.canvas)
+                    self.cases[ligne].append(case)
+                elif ligne == nombre_cases-1:
+                    case=Case(ligne, colonne, 1000)
+                    case.render(self.taille, self.canvas)
+                    self.cases[ligne].append(case)
+                elif colonne == 0:
+                    case=Case(ligne, colonne, 1000)
+                    case.render(self.taille, self.canvas)
+                    self.cases[ligne].append(case)
+                elif colonne == nombre_cases-1:
+                    case=Case(ligne, colonne, 1000)
+                    case.render(self.taille, self.canvas)
+                    self.cases[ligne].append(case)
+                else:
+                    case = Case(ligne, colonne, randrange(1, 17))
+                    case.render(self.taille, self.canvas)
+                    self.cases[ligne].append(case)
+
 
     def depart(self, event):
         """Place la case de départ à l'endroit cliqué."""
@@ -149,8 +179,8 @@ fen = tk.Tk()
 fen.title("Chemin")
 
 # ----- Création des canvas ----- #
-canvas_cases = tk.Canvas(fen, width=nombre_cases * taille_case,
-                         height=nombre_cases * taille_case, bg="white")
+canvas_cases = tk.Canvas(fen, width=(nombre_cases) * taille_case,
+                         height=(nombre_cases) * taille_case, bg="white")
 canvas_cases.grid(row=0, column=0, columnspan=2, padx=3, pady=3)
 
 # ----- Création des figures ----- #
