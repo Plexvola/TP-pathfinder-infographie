@@ -94,6 +94,7 @@ class Grille:
         self.canvas = canvas
 
         self.generate()
+        self.matrix_moy()
 
     def generate(self):
         """Génère la grille et réinitialise ses positions."""
@@ -101,29 +102,28 @@ class Grille:
         self.case_a = False
         self.total = 0
 
-        self.cases = [[] for _ in range(self.dim)]
-        for ligne in range(self.dim):
-            for colonne in range(self.dim):
-                if ligne == 0:
-                    case=Case(ligne, colonne, 1000)
-                    case.render(self.taille, self.canvas)
-                    self.cases[ligne].append(case)
-                elif ligne == nombre_cases-1:
-                    case=Case(ligne, colonne, 1000)
-                    case.render(self.taille, self.canvas)
-                    self.cases[ligne].append(case)
-                elif colonne == 0:
-                    case=Case(ligne, colonne, 1000)
-                    case.render(self.taille, self.canvas)
-                    self.cases[ligne].append(case)
-                elif colonne == nombre_cases-1:
-                    case=Case(ligne, colonne, 1000)
-                    case.render(self.taille, self.canvas)
-                    self.cases[ligne].append(case)
-                else:
-                    case = Case(ligne, colonne, randrange(1, 17))
-                    case.render(self.taille, self.canvas)
-                    self.cases[ligne].append(case)
+        self.cases = [[] for _ in range(self.dim+2)]
+        self.cases[0] = [Case(0, n, 1000) for n in range(self.dim+2)]
+        self.cases[-1] = [Case(self.dim+1, n, 1000) for n in range(self.dim+2)]
+        for ligne in range(1, self.dim+1):
+            self.cases[ligne].append(Case(ligne, 0, 1000))
+            for colonne in range(1, self.dim+1):
+                case=Case(ligne, colonne, randrange(1,17))
+                case.render(self.taille, self.canvas)
+                self.cases[ligne].append(case)
+            self.cases[ligne].append(Case(ligne, self.dim+2,1000))
+        print(self.cases)
+
+    def matrix_moy(self):
+        self.cases_moy = [[] for _ in range(len(self.cases))]
+        for i in range(len(self.cases)):
+            for j in range (len(self.cases[i])):
+                if self.cases[j][i].poids != 1000:
+                    moy=(self.cases[i][j].poids+self.cases[i+1][j+1].poids+self.cases[i+1][j].poids+self.cases[i+1][j-1].poids+self.cases[i-1][j+1].poids+self.cases[i-1][j].poids+self.cases[i-1][j-1].poids+self.cases[i][j+1].poids+self.cases[i][j-1].poids)//9
+                    self.cases_moy[j].append(moy)
+        print(self.cases_moy)
+
+
 
 
     def depart(self, event):
@@ -179,8 +179,8 @@ fen = tk.Tk()
 fen.title("Chemin")
 
 # ----- Création des canvas ----- #
-canvas_cases = tk.Canvas(fen, width=(nombre_cases) * taille_case,
-                         height=(nombre_cases) * taille_case, bg="white")
+canvas_cases = tk.Canvas(fen, width=(nombre_cases+2) * taille_case,
+                         height=(nombre_cases+2) * taille_case, bg="white")
 canvas_cases.grid(row=0, column=0, columnspan=2, padx=3, pady=3)
 
 # ----- Création des figures ----- #
