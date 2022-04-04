@@ -6,7 +6,7 @@ from tkinter import messagebox
 
 # ----- Variables globales ----- #
 taille_case = 30
-nombre_cases = 30  # Nombre de cases par ligne et par colonne
+nombre_cases = 15  # Nombre de cases par ligne et par colonne
 
 
 def rgb_hack(rgb):
@@ -137,6 +137,10 @@ class Grille:
             self.depart(event)
             self.case_d = True
 
+def Generate():
+    Grille(taille_case, nombre_cases, canvas_cases)
+
+
 
 # ----- Programme principal ----- #
 
@@ -150,9 +154,16 @@ canvas_cases = tk.Canvas(fen, width=nombre_cases * taille_case,
 canvas_cases.grid(row=0, column=0, columnspan=2, padx=3, pady=3)
 
 # ----- Création des figures ----- #
-g = Grille(30, 10, canvas_cases)
+g = Grille(taille_case, nombre_cases, canvas_cases)
 
-fen.bind("<Button-1>", g.clic_case)
+
+frame_bouton=tk.Frame(fen, height=50, width=100)
+frame_bouton.grid()
+
+Generate = tk.Button(fen, text='Generate', command=Generate)
+Generate.grid()
+
+fen.bind("<Button-3>", g.clic_case)
 
 fen.mainloop()  # Boucle d'attente des événements
 
