@@ -4,9 +4,19 @@ import tkinter as tk
 from random import randrange
 from tkinter import messagebox
 
+from OpenGL.GL import (GL_COLOR_BUFFER_BIT, GL_COLOR_MATERIAL,
+                       GL_DEPTH_BUFFER_BIT, GL_DEPTH_TEST, GL_FLAT, GL_LESS,
+                       GL_LIGHTING, GL_MODELVIEW, GL_PROJECTION, glClear,
+                       glClearColor, glColor4f, glDepthFunc, glEnable,
+                       glLoadIdentity, glMatrixMode, glShadeModel, glViewport)
+from OpenGL.GLU import gluPerspective
+from OpenGL.GLUT import (GLUT_DEPTH, GLUT_DOUBLE, GLUT_RGBA, glutCreateWindow,
+                         glutDisplayFunc, glutInit, glutInitDisplayMode,
+                         glutKeyboardFunc, glutMainLoop, glutPostRedisplay,
+                         glutReshapeFunc, glutReshapeWindow)
+
 # ----- Variables globales ----- #
 taille_case = 30
-nombre_cases = 30  # Nombre de cases par ligne et par colonne
 
 
 def rgb_hack(rgb):
@@ -31,40 +41,35 @@ class Case:
             self.x * taille_case + 2,
             self.y * taille_case + 2,
             (self.x + 1) * taille_case + 2,
-            (self.y + 1) * taille_case + 2
+            (self.y + 1) * taille_case + 2,
         )
         canvas.create_text(
-            self.x * taille_case + taille_case/2,
-            self.y * taille_case + taille_case/2,
-            text=self.poids
+            self.x * taille_case + taille_case / 2,
+            self.y * taille_case + taille_case / 2,
+            text=self.poids,
         )
         canvas.itemconfigure(
-            self.id, outline="black",
+            self.id,
+            outline="black",
             fill=self.couleur,
         )
 
     def depart(self, canvas):
         """Définit la case comme la case de départ."""
-        canvas.itemconfigure(
-            self.id, outline="black",
-            fill=rgb_hack((0, 255, 0))
-        )
+        canvas.itemconfigure(self.id, outline="black",
+                             fill=rgb_hack((0, 255, 0)))
         self.etat = "DEPART"
 
     def arrivee(self, canvas):
         """Définit la case comme la case d'arrivée."""
-        canvas.itemconfigure(
-            self.id, outline="black",
-            fill=rgb_hack((255, 0, 0))
-        )
+        canvas.itemconfigure(self.id, outline="black",
+                             fill=rgb_hack((255, 0, 0)))
         self.etat = "ARRIVEE"
 
     def traverser(self, canvas):
         """Traverse la case."""
-        canvas.itemconfigure(
-            self.id, outline="black",
-            fill=rgb_hack((255, 128, 0))
-        )
+        canvas.itemconfigure(self.id, outline="black",
+                             fill=rgb_hack((255, 128, 0)))
         self.etat = "CHEMIN"
 
 
@@ -138,26 +143,70 @@ class Grille:
             self.case_d = True
 
 
-# ----- Programme principal ----- #
+# # ----- Programme principal ----- #
 
-# ----- Création de la fenêtre ----- #
-fen = tk.Tk()
-fen.title("Chemin")
+# # ----- Création de la fenêtre ----- #
+# fen = tk.Tk()
+# fen.title("Chemin")
 
-# ----- Création des canvas ----- #
-canvas_cases = tk.Canvas(fen, width=nombre_cases * taille_case,
-                         height=nombre_cases * taille_case, bg="white")
-canvas_cases.grid(row=0, column=0, columnspan=2, padx=3, pady=3)
+# # ----- Création des canvas ----- #
+# canvas_cases = tk.Canvas(fen, width=nombre_cases * taille_case,
+#                          height=nombre_cases * taille_case, bg="white")
+# canvas_cases.grid(row=0, column=0, columnspan=2, padx=3, pady=3)
 
-# ----- Création des figures ----- #
-g = Grille(30, 10, canvas_cases)
+# # ----- Création des figures ----- #
+# g = Grille(30, 50, canvas_cases)
 
-fen.bind("<Button-1>", g.clic_case)
+# fen.bind("<Button-1>", g.clic_case)
 
-fen.mainloop()  # Boucle d'attente des événements
+# fen.mainloop()  # Boucle d'attente des événements
+
+
+def init():
+    """Initialise la fenêtre OpenGL."""
+    glEnable(GL_DEPTH_TEST)
+    glDepthFunc(GL_LESS)
+    glClearColor(0, 0, 0, 0)
+    glEnable(GL_LIGHTING)
+    glEnable(GL_COLOR_MATERIAL)
+    glShadeModel(GL_FLAT)
+
+
+def display():
+    """Affiche la fenêtre OpenGL."""
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+    glColor4f(1, 1, 1, 1)
+
+
+def reshape(width, height):
+    """Reforme la fenêtre et bouge les formes dedans."""
+    glViewport(0, 0, width, height)
+    glMatrixMode(GL_PROJECTION)
+    glLoadIdentity()
+    gluPerspective(20, width / height, 5, 200)
+    glMatrixMode(GL_MODELVIEW)
+
+
+def keyboard(key, x, y):
+    """Réagit aux entrées clavier."""
+    print(key)
+    glutPostRedisplay()
+
+
+glutInit()
+glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH)
+
+glutCreateWindow("planet")
+glutReshapeWindow(512, 512)
+
+glutReshapeFunc(reshape)
+glutDisplayFunc(display)
+glutKeyboardFunc(keyboard)
+
+init()
+
+glutMainLoop()
 
 
 # couleur : 15 couleurs (255 : 17 = 15)
-# couleur : a = (0 -> 15) (RGB : 0,0, a * 17)
-
 # https://openclassrooms.com/forum/sujet/tkinter-lier-des-labels-avec-un-dictionnaire
