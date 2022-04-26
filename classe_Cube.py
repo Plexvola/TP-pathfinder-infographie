@@ -1,9 +1,6 @@
-try:
-    from OpenGL.GL import *
-    from OpenGL.GLU import *
-    from OpenGL.GLUT import *
-except:
-    print ("OpenGL wrapper for python not found")
+from OpenGL.GL import *
+from OpenGL.GLU import *
+from OpenGL.GLUT import *
 
 
 class Cube:
