@@ -1,84 +1,21 @@
 """Pathfinder d'un point A à un point B en OpenGL."""
 # ----- Importation des Modules ----- #
-import tkinter as tk
+from itertools import product
+from math import inf, pow, sqrt
 from random import randrange
-from tkinter import messagebox
 
 from OpenGL.GL import (GL_COLOR_BUFFER_BIT, GL_COLOR_MATERIAL,
                        GL_DEPTH_BUFFER_BIT, GL_DEPTH_TEST, GL_FLAT, GL_LESS,
-                       GL_LIGHTING, GL_MODELVIEW, GL_PROJECTION, glClear,
-                       glClearColor, glColor4f, glDepthFunc, glEnable,
-                       glLoadIdentity, glMatrixMode, glShadeModel, glViewport)
+                       GL_LIGHTING, GL_MODELVIEW, GL_POLYGON, GL_PROJECTION,
+                       GL_QUADS, glBegin, glClear, glClearColor, glColor3f,
+                       glColor4f, glDepthFunc, glEnable, glEnd, glLoadIdentity,
+                       glMatrixMode, glOrtho, glFrustum, glVertex3f, glViewport)
 from OpenGL.GLU import gluPerspective
 from OpenGL.GLUT import (GLUT_DEPTH, GLUT_DOUBLE, GLUT_RGBA, glutCreateWindow,
-                         glutDisplayFunc, glutInit, glutInitDisplayMode,
-                         glutKeyboardFunc, glutMainLoop, glutPostRedisplay,
-                         glutReshapeFunc, glutReshapeWindow)
-
-
-std::vector<glm::vec3> vertices;
-std::vector<glm::uvec4> indices;
-
-for(int j=0; j<=slices; ++j) {
-for(int i=0; i<=slices; ++i) {
-  float x = (float)i/(float)slices;
-  float y = 0;
-  float z = (float)j/(float)slices;
-  vertices.push_back(glm::vec3(x, y, z));
-}
-}
-
-for(int j=0; j<slices; ++j) {
-for(int i=0; i<slices; ++i) {
-
-  int row1 =  j    * (slices+1);
-  int row2 = (j+1) * (slices+1);
-
-  indices.push_back(glm::uvec4(row1+i, row1+i+1, row1+i+1, row2+i+1));
-  indices.push_back(glm::uvec4(row2+i+1, row2+i, row2+i, row1+i));
-
-}
-}
-
-glGenVertexArrays( 1, &vao );
-glBindVertexArray( vao );
-
-GLuint vbo;
-glGenBuffers( 1, &vbo );
-glBindBuffer( GL_ARRAY_BUFFER, vbo );
-glBufferData( GL_ARRAY_BUFFER, vertices.size()*sizeof(glm::vec3), glm::value_ptr(vertices[0]), GL_STATIC_DRAW );
-glEnableVertexAttribArray( 0 );
-glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, 0, nullptr );
-
-GLuint ibo;
-glGenBuffers( 1, &ibo );
-glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, ibo );
-glBufferData( GL_ELEMENT_ARRAY_BUFFER, indices.size()*sizeof(glm::uvec4), glm::value_ptr(indices[0]), GL_STATIC_DRAW);
-
-glBindVertexArray(0);
-glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-lenght = (GLuint)indices.size()*4;
-
-
-glEnable(GL_DEPTH_TEST);
-
-glBindVertexArray(vao);
-
-glDrawElements(GL_LINES, lenght, GL_UNSIGNED_INT, NULL);
-
-glBindVertexArray(0);
-
-glDisable(GL_DEPTH_TEST);
-
-# ----- Variables globales ----- #
-taille_case = 30
-
-
-def rgb_hack(rgb):
-    """Transforme un nombre en sa représentation RGB."""
-    return "#%02x%02x%02x" % rgb
+                         glutDisplayFunc, glutIdleFunc, glutInit,
+                         glutInitDisplayMode, glutKeyboardFunc, glutMainLoop,
+                         glutMouseFunc, glutPostRedisplay, glutReshapeFunc,
+                         glutReshapeWindow, glutSwapBuffers)
 
 
 class Case:
@@ -88,151 +25,102 @@ class Case:
         """Initialise la case."""
         self.x = x
         self.y = y
-        self.couleur = rgb_hack((255, 255 - 15 * poids, 255))
+        self.couleur = (1, 0.058 * poids, 1)
         self.poids = poids
-        self.etat = "VIDE"
+        self.cost = inf
 
-    def render(self, taille_case, canvas):
+    def draw(self, width, height):
         """Affiche la case à l'écran."""
-        self.id = canvas.create_rectangle(
-            self.x * taille_case + 2,
-            self.y * taille_case + 2,
-            (self.x + 1) * taille_case + 2,
-            (self.y + 1) * taille_case + 2,
-        )
-        canvas.create_text(
-            self.x * taille_case + taille_case / 2,
-            self.y * taille_case + taille_case / 2,
-            text=self.poids,
-        )
-        canvas.itemconfigure(
-            self.id,
-            outline="black",
-            fill=self.couleur,
-        )
+        glColor3f(*self.couleur)
+        glBegin(GL_QUADS)
+        glVertex3f(self.x * width, self.y * height, 0)
+        glVertex3f(self.x * width + width, self.y * height, 0)
+        glVertex3f(self.x * width + width, self.y * height + height, 0)
+        glVertex3f(self.x * width, self.y * height + height, 0)
+        glEnd()
 
-    def depart(self, canvas):
+    def depart(self):
         """Définit la case comme la case de départ."""
-        canvas.itemconfigure(self.id, outline="black",
-                             fill=rgb_hack((0, 255, 0)))
-        self.etat = "DEPART"
+        self.couleur = (0, 1, 0)
+        self.cost = 0
 
-    def arrivee(self, canvas):
+    def arrivee(self):
         """Définit la case comme la case d'arrivée."""
-        canvas.itemconfigure(self.id, outline="black",
-                             fill=rgb_hack((255, 0, 0)))
-        self.etat = "ARRIVEE"
+        self.couleur = (1, 0, 0)
 
-    def traverser(self, canvas):
+    def traverser(self):
         """Traverse la case."""
-        canvas.itemconfigure(self.id, outline="black",
-                             fill=rgb_hack((255, 128, 0)))
-        self.etat = "CHEMIN"
+        self.couleur = (1, 0.5, 0)
+
+    def distance(self, case):
+        """Renvoie la distance entre deux cases."""
+        distance_horiz = pow(self.x - case.x, 2) + pow(self.y - case.y, 2)
+        distance_diag = sqrt(distance_horiz + pow(self.poids - case.poids), 2)
+        return distance_diag
 
 
 class Grille:
     """Grille composée de cases."""
 
-    def __init__(self, taille, dimension, canvas):
+    def __init__(self, taille, i, j):
         """Crée une grille contenant des cases.
 
         Chaque case mesure taille, et la grille possède dimension cases par
         côté.
         """
         self.taille = taille
-        self.dim = dimension
-        self.cases = [[] for _ in range(dimension)]
+        self.i = i
+        self.j = j
+        self.cases = [[] for _ in range(i)]
         self.total = 0
-        self.canvas = canvas
 
-        self.case_d = False
-        self.case_a = False
+        self.dep = None
+        self.arr = None
 
-        for ligne in range(dimension):
-            for colonne in range(dimension):
+        for ligne in range(self.i):
+            for colonne in range(self.j):
                 case = Case(ligne, colonne, randrange(1, 17))
-                case.render(taille, canvas)
                 self.cases[ligne].append(case)
 
-    def depart(self, event):
-        """Place la case de départ à l'endroit cliqué."""
-        x = event.x // self.taille
-        y = event.y // self.taille
-        self.cases[x][y].depart(self.canvas)
-        self.total += self.cases[x][y].poids
+    def dijkstra(self, case):
+        if case.cost == inf:
+            Exception("nope")
 
-    def arrivee(self, event):
-        """Place la case de fin à l'endroit cliqué."""
-        x = event.x // self.taille
-        y = event.y // self.taille
-        self.cases[x][y].arrivee(self.canvas)
-        self.total += self.cases[x][y].poids
+        adj = product(
+            [case.x - 1, case.x, case.x + 1], [case.y - 1, case.y, case.y + 1]
+        )
 
-    def chemin(self, event):
-        """Place une case de chemin à l'endroit cliqué."""
-        x = event.x // self.taille
-        y = event.y // self.taille
-        if self.cases[x][y].etat == "ARRIVEE":
-            print("vous etes arrivé, vous avez parcouru un total de",
-                  self.total)
-        elif self.cases[x][y].etat == "DEPART":
-            messagebox.showwarning(
-                title="case depart", message="ceci est la case de depart"
-            )
-        elif self.cases[x][y].etat == "CHEMIN":
-            messagebox.showwarning(
-                title="case depart", message="vous êtes deja passer par là"
-            )
-        else:
-            self.cases[x][y].traverser(self.canvas)
-            self.total += self.cases[x][y].poids
+        print(adj)
 
-    def clic_case(self, event):
+    def draw(self):
+        for ligne in range(self.i):
+            for colonne in range(self.j):
+                self.cases[ligne][colonne].draw(self.taille, self.taille)
+
+    def clic_case(self, x, y):
         """Cliquer sur une case."""
-        if self.case_d:
-            if self.case_a:
-                self.chemin(event)
-            else:
-                self.arrivee(event)
-                self.case_a = True
-        else:
-            self.depart(event)
-            self.case_d = True
+        if not self.dep:
+            self.cases[x // self.taille][y // self.taille].depart()
+            self.dep = (x // self.taille, y // self.taille)
+        elif not self.arr:
+            self.cases[x // self.taille][y // self.taille].arrivee()
+            self.arr = (x // self.taille, y // self.taille)
 
 
-# # ----- Programme principal ----- #
-
-# # ----- Création de la fenêtre ----- #
-# fen = tk.Tk()
-# fen.title("Chemin")
-
-# # ----- Création des canvas ----- #
-# canvas_cases = tk.Canvas(fen, width=nombre_cases * taille_case,
-#                          height=nombre_cases * taille_case, bg="white")
-# canvas_cases.grid(row=0, column=0, columnspan=2, padx=3, pady=3)
-
-# # ----- Création des figures ----- #
-# g = Grille(30, 50, canvas_cases)
-
-# fen.bind("<Button-1>", g.clic_case)
-
-# fen.mainloop()  # Boucle d'attente des événements
+grille = Grille(20, 40, 40)
 
 
 def init():
     """Initialise la fenêtre OpenGL."""
-    glEnable(GL_DEPTH_TEST)
-    glDepthFunc(GL_LESS)
     glClearColor(0, 0, 0, 0)
-    glEnable(GL_LIGHTING)
-    glEnable(GL_COLOR_MATERIAL)
-    glShadeModel(GL_FLAT)
 
 
 def display():
     """Affiche la fenêtre OpenGL."""
+    global grille
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-    glColor4f(1, 1, 1, 1)
+    grille.draw()
+    glutSwapBuffers()
 
 
 def reshape(width, height):
@@ -240,7 +128,8 @@ def reshape(width, height):
     glViewport(0, 0, width, height)
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
-    gluPerspective(20, width / height, 5, 200)
+    glOrtho(0, width, height, 0, 1, 0)
+    # gluPerspective(20, width / height, 5, 200)
     glMatrixMode(GL_MODELVIEW)
 
 
@@ -250,15 +139,24 @@ def keyboard(key, x, y):
     glutPostRedisplay()
 
 
+def mouse(button, state, x, y):
+    """Réagit au clic de souris."""
+    global grille
+    if state:
+        grille.clic_case(x, y)
+
+
 glutInit()
 glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH)
 
-glutCreateWindow("planet")
+glutCreateWindow("pathfinder")
 glutReshapeWindow(512, 512)
 
 glutReshapeFunc(reshape)
 glutDisplayFunc(display)
+glutIdleFunc(display)
 glutKeyboardFunc(keyboard)
+glutMouseFunc(mouse)
 
 init()
 
