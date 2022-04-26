@@ -73,7 +73,6 @@ class Grille:
         self.j = j
         self.cases = [[] for _ in range(i)]
         self.total = 0
-
         self.dep = None
         self.arr = None
 
@@ -107,7 +106,7 @@ class Grille:
             self.arr = (x // self.taille, y // self.taille)
 
 
-grille = Grille(20, 40, 40)
+grille = Grille(40, 10, 10)
 
 
 def init():
