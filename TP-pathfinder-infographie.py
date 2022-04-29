@@ -1,4 +1,4 @@
-"""Pathfinder d'un point A à un point B en OpenGL."""
+"""Pathfinder d'un poi0.65A à un point B en OpenGL."""
 # ----- Importation des Modules ----- #
 import sys
 from enum import Enum
@@ -14,13 +14,17 @@ from OpenGL.GL import (GL_COLOR_BUFFER_BIT, GL_COLOR_MATERIAL,
                        glClearColor, glColor3f, glColor4f, glDepthFunc,
                        glDisable, glEnable, glEnd, glFrustum, glLoadIdentity,
                        glMatrixMode, glOrtho, glPopMatrix, glPushMatrix,
-                       glShadeModel, glVertex3f, glViewport)
+                       glShadeModel, glVertex3f, glViewport, glget,
+                       GL_VIEWPORT, glVertex2f, glRotatef, glTranslatef,
+                       glMultMatrixf)
 from OpenGL.GLU import gluLookAt, gluPerspective
 from OpenGL.GLUT import (GLUT_DEPTH, GLUT_DOUBLE, GLUT_RGBA, glutCreateWindow,
                          glutDisplayFunc, glutIdleFunc, glutInit,
                          glutInitDisplayMode, glutKeyboardFunc, glutMainLoop,
                          glutMouseFunc, glutPostRedisplay, glutReshapeFunc,
-                         glutReshapeWindow, glutSolidCube, glutSwapBuffers)
+                         glutReshapeWindow, glutSolidCube, glutSwapBuffers,
+                         glutDestroyWindow, glutGetWindow, GLUT_WINDOW_HEIGHT,
+                         GLUT_WINDOW_WIDTH, glutGet, glutFullScreen)
 
 
 class Status(Enum):
@@ -35,30 +39,77 @@ class Case:
         """Initialise la case."""
         self.x = x
         self.y = y
-        self.couleur = (1, 0.058 * poids, 1)
+        self.couleur = (0.058*poids, 0.8, 1)
         if poids == inf:
             self.couleur = (0.2, 0.2, 0.2)
         self.poids = poids
-        self.cost = inf
+        self.distance = inf
         self.status = Status.UNVISITED
         self.prev = None
 
     def draw(self, width, height):
         """Affiche la case à l'écran."""
+        w = self.x * width * 2
+        h = self.y * height * 2
         glPushMatrix()
         glBegin(GL_QUADS)
         glColor3f(*self.couleur)
-        glVertex3f(self.x * width, self.y * height, 0)
-        glVertex3f(self.x * width + width, self.y * height, 0)
-        glVertex3f(self.x * width + width, self.y * height + height, 0)
-        glVertex3f(self.x * width, self.y * height + height, 0)
+
+        # face du bas
+        glVertex3f(w, 0, h)
+        glVertex3f(w + width, 0, h)
+        glVertex3f(w + width, 0, h + height)
+        glVertex3f(w, 0, h + height)
+
+        # face du haut
+        glVertex3f(w, self.poids*10, h)
+        glVertex3f(w + width, self.poids*10, h)
+        glVertex3f(w + width, self.poids*10, h + height)
+        glVertex3f(w, self.poids*10, h + height)
+
+        # face de derrière
+        glVertex3f(w, 0, h)
+        glVertex3f(w + width, 0, h)
+        glVertex3f(w + width, self.poids*10, h)
+        glVertex3f(w, self.poids*10, h)
+
+        # face de devant
+        glVertex3f(w, 0, h + height)
+        glVertex3f(w + width, 0, h + height)
+        glVertex3f(w + width, self.poids*10, h + height)
+        glVertex3f(w, self.poids*10, h + height)
+
+        # face de gauche
+        glVertex3f(w, 0, h)
+        glVertex3f(w, self.poids*10, h)
+        glVertex3f(w, self.poids*10, h + height)
+        glVertex3f(w, 0, h + height)
+
+        # face de gauche
+        glVertex3f(w + width, 0, h)
+        glVertex3f(w + width, self.poids*10, h)
+        glVertex3f(w + width, self.poids*10, h + height)
+        glVertex3f(w + width, 0, h + height)
+
+        glEnd()
+        glPopMatrix()
+
+    def draw_s(self, width, height):
+        """Affiche la case durant la sélection non-perspective."""
+        glPushMatrix()
+        glBegin(GL_QUADS)
+        glColor3f(*self.couleur)
+        glVertex2f(self.x * width,         self.y * height)
+        glVertex2f(self.x * width + width, self.y * height)
+        glVertex2f(self.x * width + width, self.y * height + height)
+        glVertex2f(self.x * width,         self.y * height + height)
         glEnd()
         glPopMatrix()
 
     def depart(self):
         """Définit la case comme la case de départ."""
         self.couleur = (0, 1, 0)
-        self.cost = 0
+        self.distance = 0
 
     def arrivee(self):
         """Définit la case comme la case d'arrivée."""
@@ -66,10 +117,10 @@ class Case:
 
     def traverser(self):
         """Traverse la case."""
-        self.couleur = (1, 0.5, 0)
+        self.couleur = (1, 0.01 * self.distance, 0)
 
-    def distance(self, case):
-        """Renvoie la distance entre deux cases."""
+    def longueur(self, case):
+        """Renvoie la longueur du chemin entre deux cases."""
         distance_horiz = pow(self.x - case.x, 2) + pow(self.y - case.y, 2)
         distance_diag = sqrt(distance_horiz + pow(self.poids - case.poids, 2))
         return distance_diag
@@ -78,10 +129,10 @@ class Case:
         return f"({self.x},{self.y}): {self.poids}"
 
     def __lt__(self, other):
-        return self.cost < other.cost
+        return self.distance < other.distance
 
     def __gt__(self, other):
-        return self.cost > other.cost
+        return self.distance > other.distance
 
 
 class Grille:
@@ -99,7 +150,10 @@ class Grille:
         self.total = 0
         self.dep = None
         self.arr = None
-        self.zoom = 2000
+
+        self.zoom = 3200
+        self.theta = 0
+        self.phi = 0
 
         self.perspective = False
 
@@ -117,11 +171,12 @@ class Grille:
         return min(filter(lambda c: c.status == Status.UNVISITED, chain(*self.cases)))
 
     def dijkstra(self):
-        case = grille.smallest()
+        current = grille.smallest()
 
         adjacents = filter(
-            lambda c: c != (case.x, case.y),
-            product([case.x - 1, case.x, case.x + 1], [case.y - 1, case.y, case.y + 1]),
+            lambda c: c != (current.x, current.y),
+            product([current.x - 1, current.x, current.x + 1],
+                    [current.y - 1, current.y, current.y + 1]),
         )
 
         cases_adj = [
@@ -130,50 +185,64 @@ class Grille:
             if self.cases[x][y].status == Status.UNVISITED
         ]
 
-        for caseadj in cases_adj:
-            d = case.distance(caseadj) + case.poids
-            if d < caseadj.cost:
-                caseadj.cost = d
-                caseadj.prev = case
+        for case in cases_adj:
+            dis = current.distance + current.longueur(case)
+            if dis < case.distance:
+                case.distance = dis
+                case.prev = current
 
-        case.status = Status.VISITED
-        return case
+        current.status = Status.VISITED
+
 
     def path(self):
-        while self.smallest().cost != inf and self.arr.status != Status.VISITED:
+        while self.smallest().distance != inf and self.arr.status != Status.VISITED:
             self.dijkstra()
 
         case = self.arr
-        cases_path = [case]
-        while case.prev is not None:
-            case = case.prev
+        cases_path = []
+        while case is not None:
             cases_path.append(case)
+            case = case.prev
 
         for c in reversed(cases_path):
             c.traverser()
             self.draw()
-            glutPostRedisplay()
-            sleep(0.1)
 
     def draw(self):
-        for ligne in range(self.i + 2):
-            for colonne in range(self.j + 2):
-                self.cases[ligne][colonne].draw(self.taille, self.taille)
+        if self.perspective:
+            x_offset = grille.taille * (grille.i+2)
+            z_offset = grille.taille * (grille.j+2)
+            gluLookAt(
+                x_offset, grille.zoom * sin(grille.phi), grille.zoom * cos(grille.phi) + z_offset,
+                x_offset,                             0,                                 z_offset,
+                0,                                    cos(grille.phi),           -sin(grille.phi),
+            )
+            glTranslatef(x_offset, 0, z_offset)
+            glRotatef(self.theta, 0, 1, 0)
+            glTranslatef(-x_offset, 0, -z_offset)
+        for ligne in range(1, self.i+1):
+            for colonne in range(1, self.j+1):
+                if self.perspective:
+                    self.cases[ligne][colonne].draw(self.taille, self.taille)
+                else:
+                    self.cases[ligne][colonne].draw_s(self.taille, self.taille)
 
     def clic_case(self, x, y):
         """Cliquer sur une case."""
-        print(self.cases[x // self.taille][y // self.taille])
-        if not self.perspective:
+        x //= self.taille
+        y //= self.taille
+        if not self.perspective \
+                and x < self.i and y < self.j \
+                and self.cases[x][y].poids != inf:
             if not self.dep:
-                self.dep = self.cases[x // self.taille][y // self.taille]
+                self.dep = self.cases[x][y]
                 self.dep.depart()
             elif not self.arr:
-                self.arr = self.cases[x // self.taille][y // self.taille]
+                self.arr = self.cases[x][y]
                 self.arr.arrivee()
 
 
-grille = Grille(40, 10, 15)
-theta, phi = 0, 180
+grille = Grille(25, 40, 37)
 
 
 def init():
@@ -191,14 +260,6 @@ def display():
     global grille
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     glLoadIdentity()
-    if grille.perspective:
-        x_offset = grille.taille * (grille.i+2) / 2
-        y_offset = grille.taille * (grille.j+2) / 2
-        gluLookAt(
-            x_offset, grille.zoom * sin(phi) + y_offset, grille.zoom * cos(phi),
-            x_offset,                          y_offset,                      0,
-            0,               cos(phi),              -sin(phi),
-        )
     grille.draw()
 
     glutSwapBuffers()
@@ -207,37 +268,48 @@ def display():
 def reshape(width, height):
     """Reforme la fenêtre et bouge les formes dedans."""
     global grille
+    print(width, height)
     glViewport(0, 0, width, height)
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
     if grille.perspective:
-        gluPerspective(20, width / height, 500, 5000)
+        gluPerspective(20, width / height, 200, 10000)
     else:
-        glOrtho(0, width, height, 0, 1, 0)
+        glOrtho(0, width, height, 0, 20, 0)
     glMatrixMode(GL_MODELVIEW)
 
 
 def keyboard(key, x, y):
     """Réagit aux entrées clavier."""
-    global grille, theta, phi
-    print(key, theta, phi)
-    if key == b"z":
-        grille.zoom -= 5
-    if key == b"x":
-        grille.zoom += 5
-    elif key == b"w":
-        phi = (phi + 0.05 * pi) % (pi * 2)
-    elif key == b"s":
-        phi = (phi - 0.05 * pi) % (pi * 2)
-    elif key == b"a":
-        theta0 = (theta - 0.05 * pi) % (pi * 2)
-    elif key == b"d":
-        theta = (theta + 0.05 * pi) % (pi * 2)
-    elif key == b" ":
+    global grille
+    print(key, grille.theta, grille.phi, grille.zoom)
+
+    if key == b" ":
         grille.perspective = not grille.perspective
         init()
-        # grille.path()
-    glutPostRedisplay()
+        reshape(glutGet(GLUT_WINDOW_WIDTH), glutGet(GLUT_WINDOW_HEIGHT))
+        if grille.perspective:
+            grille.path()
+
+    if grille.perspective:
+        if key == b"z":
+            grille.zoom -= 10
+        elif key == b"x":
+            grille.zoom += 10
+        elif key == b"w":
+            grille.phi = (grille.phi + 0.05 * pi) % (pi * 2)
+        elif key == b"s":
+            grille.phi = (grille.phi - 0.05 * pi) % (pi * 2)
+        elif key == b"a":
+            grille.theta = (grille.theta - 2) % 360
+        elif key == b"d":
+            grille.theta = (grille.theta + 2) % 360
+
+    if key == b'q':
+        glutDestroyWindow(glutGetWindow())
+
+    if key != b'q':
+        glutPostRedisplay()
 
 
 def mouse(button, state, x, y):
