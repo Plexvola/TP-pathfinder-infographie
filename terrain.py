@@ -4,7 +4,7 @@ import sys
 from enum import Enum
 from itertools import chain, product
 from math import cos, inf, pi, pow, sin, sqrt
-from random import randrange
+from random import randrange, choice
 from time import sleep
 
 from OpenGL.GL import (GL_COLOR_BUFFER_BIT, GL_COLOR_MATERIAL,
@@ -28,8 +28,9 @@ from OpenGL.GLUT import (GLUT_DEPTH, GLUT_DOUBLE, GLUT_RGBA, glutCreateWindow,
 
 
 class Status(Enum):
-    UNVISITED = True
-    VISITED = False
+    VISITED = 0
+    UNVISITED = 1
+    NONTRAVERSABLE = 2
 
 
 class Case:
@@ -39,21 +40,51 @@ class Case:
         """Initialise la case."""
         self.x = x
         self.y = y
-        self.couleur = (0.058*poids, 0.8, 1)
         if poids == inf:
-            self.couleur = (0.2, 0.2, 0.2)
+            self.status = Status.NONTRAVERSABLE
+        else:
+            self.status = Status.UNVISITED
         self.poids = poids
         self.distance = inf
-        self.status = Status.UNVISITED
         self.prev = None
+        self.start = False
+        self.end = False
+        self.trav = None
+
+    def color(self):
+        if self.status == Status.NONTRAVERSABLE:
+            return (0.2, 0.2, 0.2)
+        elif self.end:
+            return (0, 1, 0)
+        elif self.start:
+            return (1, 0, 0)
+        elif self.trav:
+            return (1-self.trav, self.trav, 0)
+        elif self.status == Status.VISITED:
+            return (1/32*self.poids, 1/32*self.poids, 1/32*self.poids)
+        else:
+            return (1/32*self.poids, 0.85, 1)
+
+    def clean(self):
+        if self.poids == inf:
+            self.status = Status.NONTRAVERSABLE
+        else:
+            self.status = Status.UNVISITED
+
+        self.distance = inf
+        self.prev = None
+        self.start = False
+        self.end = False
+        self.trav = None
+
 
     def draw(self, width, height):
         """Affiche la case à l'écran."""
-        w = self.x * width * 2
-        h = self.y * height * 2
+        w = self.x * width
+        h = self.y * height
         glPushMatrix()
         glBegin(GL_QUADS)
-        glColor3f(*self.couleur)
+        glColor3f(*self.color())
 
         # face du bas
         glVertex3f(w, 0, h)
@@ -62,33 +93,33 @@ class Case:
         glVertex3f(w, 0, h + height)
 
         # face du haut
-        glVertex3f(w, self.poids*10, h)
-        glVertex3f(w + width, self.poids*10, h)
-        glVertex3f(w + width, self.poids*10, h + height)
-        glVertex3f(w, self.poids*10, h + height)
+        glVertex3f(w, self.poids*3, h)
+        glVertex3f(w + width, self.poids*3, h)
+        glVertex3f(w + width, self.poids*3, h + height)
+        glVertex3f(w, self.poids*3, h + height)
 
         # face de derrière
         glVertex3f(w, 0, h)
         glVertex3f(w + width, 0, h)
-        glVertex3f(w + width, self.poids*10, h)
-        glVertex3f(w, self.poids*10, h)
+        glVertex3f(w + width, self.poids*3, h)
+        glVertex3f(w, self.poids*3, h)
 
         # face de devant
         glVertex3f(w, 0, h + height)
         glVertex3f(w + width, 0, h + height)
-        glVertex3f(w + width, self.poids*10, h + height)
-        glVertex3f(w, self.poids*10, h + height)
+        glVertex3f(w + width, self.poids*3, h + height)
+        glVertex3f(w, self.poids*3, h + height)
 
         # face de gauche
         glVertex3f(w, 0, h)
-        glVertex3f(w, self.poids*10, h)
-        glVertex3f(w, self.poids*10, h + height)
+        glVertex3f(w, self.poids*3, h)
+        glVertex3f(w, self.poids*3, h + height)
         glVertex3f(w, 0, h + height)
 
         # face de gauche
         glVertex3f(w + width, 0, h)
-        glVertex3f(w + width, self.poids*10, h)
-        glVertex3f(w + width, self.poids*10, h + height)
+        glVertex3f(w + width, self.poids*3, h)
+        glVertex3f(w + width, self.poids*3, h + height)
         glVertex3f(w + width, 0, h + height)
 
         glEnd()
@@ -98,7 +129,7 @@ class Case:
         """Affiche la case durant la sélection non-perspective."""
         glPushMatrix()
         glBegin(GL_QUADS)
-        glColor3f(*self.couleur)
+        glColor3f(*self.color())
         glVertex2f(self.x * width,         self.y * height)
         glVertex2f(self.x * width + width, self.y * height)
         glVertex2f(self.x * width + width, self.y * height + height)
@@ -108,16 +139,16 @@ class Case:
 
     def depart(self):
         """Définit la case comme la case de départ."""
-        self.couleur = (0, 1, 0)
         self.distance = 0
+        self.start = True
 
     def arrivee(self):
         """Définit la case comme la case d'arrivée."""
-        self.couleur = (1, 0, 0)
+        self.end = True
 
-    def traverser(self):
+    def traverser(self, max_dist):
         """Traverse la case."""
-        self.couleur = (1, 0.01 * self.distance, 0)
+        self.trav = self.distance/max_dist
 
     def longueur(self, case):
         """Renvoie la longueur du chemin entre deux cases."""
@@ -146,46 +177,76 @@ class Grille:
         self.taille = taille
         self.i = i
         self.j = j
-        self.cases = [[] for _ in range(i + 2)]
-        self.total = 0
         self.dep = None
         self.arr = None
 
-        self.zoom = 3200
+        self.zoom = 3 * taille * max(i, j)
         self.theta = 0
-        self.phi = 0
+        self.phi = pi/2
 
         self.perspective = False
 
-        self.cases[0] = [Case(0, x, inf) for x in range(j + 2)]
-        self.cases[i + 1] = [Case(i + 1, x, inf) for x in range(j + 2)]
+        self.cases = [[] for _ in range(i + 2)]
+        self.generate()
+
+    def generate(self):
+
+        self.cases[0] = [Case(0, x, inf) for x in range(self.j + 2)]
+        self.cases[self.i + 1] = [Case(self.i + 1, x, inf) for x in range(self.j + 2)]
 
         for ligne in range(1, self.i + 1):
             self.cases[ligne].append(Case(ligne, 0, inf))
             for colonne in range(1, self.j + 1):
-                case = Case(ligne, colonne, randrange(1, 17))
+                case = Case(ligne, colonne, choice(list(range(1, 33))))
                 self.cases[ligne].append(case)
             self.cases[ligne].append(Case(ligne, self.j + 1, inf))
 
+        for column in self.cases[1:-1]:
+            for case in column[1:-1]:
+                case.poids = self.smooth(case)
+
+    def smooth(self, case):
+        """Flattens the case to the level of its neighbors."""
+        print(case)
+        n = [c.poids for c in self.neighbors(case)]
+        return sum(n)//len(n)
+
+    def clean(self):
+
+        self.dep = None
+        self.arr = None
+
+        self.zoom = 3 * self.taille * max(self.i, self.j)
+        self.theta = 0
+        self.phi = pi/2
+
+        self.perspective = False
+
+        for col in self.cases:
+            for case in col:
+                case.clean()
+
     def smallest(self):
+        """Find the smallest unvisited case."""
         return min(filter(lambda c: c.status == Status.UNVISITED, chain(*self.cases)))
 
+    def neighbors(self, case):
+        """Find all unvisited neighbors."""
+        adjacents = filter(lambda c: c != (case.x, case.y),
+                           product([case.x - 1, case.x, case.x + 1],
+                                   [case.y - 1, case.y, case.y + 1]))
+
+        cases_adj = [self.cases[x][y]
+                     for x, y in adjacents
+                     if self.cases[x][y].status == Status.UNVISITED]
+
+        return cases_adj
+
     def dijkstra(self):
+        """Visit a case according to the Dijkstra's algorithm."""
         current = grille.smallest()
 
-        adjacents = filter(
-            lambda c: c != (current.x, current.y),
-            product([current.x - 1, current.x, current.x + 1],
-                    [current.y - 1, current.y, current.y + 1]),
-        )
-
-        cases_adj = [
-            self.cases[x][y]
-            for x, y in adjacents
-            if self.cases[x][y].status == Status.UNVISITED
-        ]
-
-        for case in cases_adj:
+        for case in self.neighbors(current):
             dis = current.distance + current.longueur(case)
             if dis < case.distance:
                 case.distance = dis
@@ -193,10 +254,24 @@ class Grille:
 
         current.status = Status.VISITED
 
+    def astar(self):
+        """Visit a case according to the A*'s algorithm."""
+        current = grille.smallest()
+
+        for case in self.neighbors(current):
+            dis = current.distance + current.longueur(case) + case.longueur(self.arr)
+            if dis < case.distance:
+                case.distance = dis
+                case.prev = current
+
+        current.status = Status.VISITED
 
     def path(self):
+        """Return a list containing the path from the start case to the end case."""
         while self.smallest().distance != inf and self.arr.status != Status.VISITED:
-            self.dijkstra()
+            # self.dijkstra()
+            self.astar()
+            display()
 
         case = self.arr
         cases_path = []
@@ -204,18 +279,17 @@ class Grille:
             cases_path.append(case)
             case = case.prev
 
-        for c in reversed(cases_path):
-            c.traverser()
-            self.draw()
+        return list(reversed(cases_path))
 
     def draw(self):
+        """Draw the grid."""
         if self.perspective:
-            x_offset = grille.taille * (grille.i+2)
-            z_offset = grille.taille * (grille.j+2)
+            x_offset = grille.taille * (grille.i+2) / 2
+            z_offset = grille.taille * (grille.j+2) / 2
             gluLookAt(
                 x_offset, grille.zoom * sin(grille.phi), grille.zoom * cos(grille.phi) + z_offset,
-                x_offset,                             0,                                 z_offset,
-                0,                                    cos(grille.phi),           -sin(grille.phi),
+                x_offset, 0, z_offset,
+                0, cos(grille.phi), -sin(grille.phi),
             )
             glTranslatef(x_offset, 0, z_offset)
             glRotatef(self.theta, 0, 1, 0)
@@ -232,7 +306,7 @@ class Grille:
         x //= self.taille
         y //= self.taille
         if not self.perspective \
-                and x < self.i and y < self.j \
+                and x <= self.i and y <= self.j \
                 and self.cases[x][y].poids != inf:
             if not self.dep:
                 self.dep = self.cases[x][y]
@@ -268,7 +342,6 @@ def display():
 def reshape(width, height):
     """Reforme la fenêtre et bouge les formes dedans."""
     global grille
-    print(width, height)
     glViewport(0, 0, width, height)
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
@@ -282,14 +355,19 @@ def reshape(width, height):
 def keyboard(key, x, y):
     """Réagit aux entrées clavier."""
     global grille
-    print(key, grille.theta, grille.phi, grille.zoom)
 
-    if key == b" ":
+    if key == b'\r':
         grille.perspective = not grille.perspective
         init()
         reshape(glutGet(GLUT_WINDOW_WIDTH), glutGet(GLUT_WINDOW_HEIGHT))
         if grille.perspective:
-            grille.path()
+            p = grille.path()
+            for case in p:
+                display()
+                case.traverser(p[-1].distance)
+                sleep(0.1)
+        else:
+            grille.clean()
 
     if grille.perspective:
         if key == b"z":
@@ -297,9 +375,9 @@ def keyboard(key, x, y):
         elif key == b"x":
             grille.zoom += 10
         elif key == b"w":
-            grille.phi = (grille.phi + 0.05 * pi) % (pi * 2)
+            grille.phi = (grille.phi + 0.02 * pi) % (pi * 2)
         elif key == b"s":
-            grille.phi = (grille.phi - 0.05 * pi) % (pi * 2)
+            grille.phi = (grille.phi - 0.02 * pi) % (pi * 2)
         elif key == b"a":
             grille.theta = (grille.theta - 2) % 360
         elif key == b"d":
@@ -311,12 +389,18 @@ def keyboard(key, x, y):
     if key != b'q':
         glutPostRedisplay()
 
+    print(key, grille.theta, grille.phi, grille.zoom)
+
 
 def mouse(button, state, x, y):
     """Réagit au clic de souris."""
     global grille
     if state:
         grille.clic_case(x, y)
+    if button == 3:
+        grille.zoom -= 10
+    if button == 4:
+        grille.zoom -= 10
     glutPostRedisplay()
 
 
