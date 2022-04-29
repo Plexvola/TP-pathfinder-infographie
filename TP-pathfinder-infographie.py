@@ -93,7 +93,6 @@ class Grille:
         self.j = j
         self.cases = [[] for _ in range(i+2)]
         self.total = 0
-
         self.dep = None
         self.arr = None
 
@@ -164,9 +163,7 @@ class Grille:
             self.path()
 
 
-
 grille = Grille(120, 5, 5)
-
 
 def init():
     global grille
