@@ -61,10 +61,8 @@ class Case:
             return (1, 0, 0)
         elif self.trav:
             return (1 - self.trav, self.trav, 0)
-        # elif self.status == Status.VISITED:
-            # return (1 / 32 * self.poids, 1 / 32 * self.poids, 1 / 32 * self.poids)
         else:
-            return (1 / 32 * self.poids, 0.85, 1)
+            return (1 / 128 * self.poids, 0.85, 1)
 
     def clean(self):
         if self.poids == inf:
@@ -86,41 +84,11 @@ class Case:
         glBegin(GL_QUADS)
         glColor3f(*self.color())
 
-        # # face du bas
-        # glVertex3f(w, 0, h)
-        # glVertex3f(w + size, 0, h)
-        # glVertex3f(w + size, 0, h + size)
-        # glVertex3f(w, 0, h + size)
-
         # face du haut
-        glVertex3f(w, self.poids * 3, h)
-        glVertex3f(w + size, self.poids * 3, h)
-        glVertex3f(w + size, self.poids * 3, h + size)
-        glVertex3f(w, self.poids * 3, h + size)
-
-        # # face de derrière
-        # glVertex3f(w, 0, h)
-        # glVertex3f(w + size, 0, h)
-        # glVertex3f(w + size, self.poids * 3, h)
-        # glVertex3f(w, self.poids * 3, h)
-
-        # # face de devant
-        # glVertex3f(w, 0, h + size)
-        # glVertex3f(w + size, 0, h + size)
-        # glVertex3f(w + size, self.poids * 3, h + size)
-        # glVertex3f(w, self.poids * 3, h + size)
-
-        # # face de gauche
-        # glVertex3f(w, 0, h)
-        # glVertex3f(w, self.poids * 3, h)
-        # glVertex3f(w, self.poids * 3, h + size)
-        # glVertex3f(w, 0, h + size)
-
-        # # face de gauche
-        # glVertex3f(w + size, 0, h)
-        # glVertex3f(w + size, self.poids * 3, h)
-        # glVertex3f(w + size, self.poids * 3, h + size)
-        # glVertex3f(w + size, 0, h + size)
+        glVertex3f(w, self.poids, h)
+        glVertex3f(w + size, self.poids, h)
+        glVertex3f(w + size, self.poids, h + size)
+        glVertex3f(w, self.poids, h + size)
 
         glEnd()
         glPopMatrix()
@@ -167,18 +135,18 @@ class Case:
             if diff == (1, 0):
                 glBegin(GL_QUADS)
                 glColor3f(*self.bridge_color(case))
-                glVertex3f(w + size,   self.poids * 3, h)
-                glVertex3f(w + size,   self.poids * 3, h + size)
-                glVertex3f(w + size*2, case.poids * 3, h + size)
-                glVertex3f(w + size*2, case.poids * 3, h)
+                glVertex3f(w + size,   self.poids, h)
+                glVertex3f(w + size,   self.poids, h + size)
+                glVertex3f(w + size*2, case.poids, h + size)
+                glVertex3f(w + size*2, case.poids, h)
                 glEnd()
             elif diff == (0, 1):
                 glBegin(GL_QUADS)
                 glColor3f(*self.bridge_color(case))
-                glVertex3f(w + size, self.poids * 3, h + size)
-                glVertex3f(w,        self.poids * 3, h + size)
-                glVertex3f(w,        case.poids * 3, h + size*2)
-                glVertex3f(w + size, case.poids * 3, h + size*2)
+                glVertex3f(w + size, self.poids, h + size)
+                glVertex3f(w,        self.poids, h + size)
+                glVertex3f(w,        case.poids, h + size*2)
+                glVertex3f(w + size, case.poids, h + size*2)
                 glEnd()
             elif diff == (-1, -1):
                 # 0-1, -10
@@ -186,18 +154,18 @@ class Case:
                 glColor3f(*self.bridge_color_diagonal(case,
                                                       (neighbors[(0,-1)],
                                                        neighbors[(-1,0)])))
-                glVertex3f(w, self.poids * 3, h)
-                glVertex3f(w - size, neighbors[(-1, 0)].poids * 3, h)
-                glVertex3f(w, neighbors[(0, -1)].poids * 3, h - size)
+                glVertex3f(w, self.poids, h)
+                glVertex3f(w - size, neighbors[(-1, 0)].poids, h)
+                glVertex3f(w, neighbors[(0, -1)].poids, h - size)
                 glEnd()
             elif diff == (1, 1):
                 # 01, 10
                 glBegin(GL_TRIANGLES)
                 glColor3f(*self.bridge_color_diagonal(case, (neighbors[(0,1)],
                                                              neighbors[(1,0)])))
-                glVertex3f(w + size, self.poids * 3, h + size)
-                glVertex3f(w + size * 2, neighbors[(1, 0)].poids * 3, h + size)
-                glVertex3f(w + size, neighbors[(0, 1)].poids * 3, h + size * 2)
+                glVertex3f(w + size, self.poids, h + size)
+                glVertex3f(w + size * 2, neighbors[(1, 0)].poids, h + size)
+                glVertex3f(w + size, neighbors[(0, 1)].poids, h + size * 2)
                 glEnd()
 
     def depart(self):
@@ -245,7 +213,7 @@ class Grille:
 
         self.zoom = 6 * taille * max(i, j)
         self.theta = 0
-        self.phi = pi / 2
+        self.phi = pi/2 - pi/10
 
         self.perspective = False
 
@@ -259,13 +227,14 @@ class Grille:
         for ligne in range(1, self.i + 1):
             self.cases[ligne].append(Case(ligne, 0, inf))
             for colonne in range(1, self.j + 1):
-                case = Case(ligne, colonne, choice(list(range(1, 33))))
+                case = Case(ligne, colonne, choice(list(range(1, 129))))
                 self.cases[ligne].append(case)
             self.cases[ligne].append(Case(ligne, self.j + 1, inf))
 
         for column in self.cases[1:-1]:
             for case in column[1:-1]:
                 case.poids = self.smooth(case)
+
 
     def smooth(self, case):
         """Flattens the case to the level of its neighbors."""
@@ -278,7 +247,7 @@ class Grille:
 
         self.zoom = 6 * self.taille * max(self.i, self.j)
         self.theta = 0
-        self.phi = pi / 2
+        self.phi = pi/2 - pi/10
 
         self.perspective = False
 
@@ -312,7 +281,6 @@ class Grille:
     def dijkstra(self, smallest):
         """Visit a case according to the Dijkstra's algorithm."""
         current = smallest()
-
         for case in self.neighbors(current):
             if case.status == Status.UNVISITED:
                 dis = current.distance + current.longueur(case)
@@ -390,8 +358,7 @@ class Grille:
                 self.arr.arrivee()
 
 
-grille = Grille(40, 19, 23)
-
+grille = Grille(29, 42, 32)
 
 def init():
     """Initialise la fenêtre OpenGL."""
@@ -420,7 +387,7 @@ def reshape(width, height):
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
     if grille.perspective:
-        gluPerspective(20, width / height, 200, 10000)
+        gluPerspective(16, width / height, 200, 10000)
     else:
         glOrtho(0, width, height, 0, 20, 0)
     glMatrixMode(GL_MODELVIEW)
