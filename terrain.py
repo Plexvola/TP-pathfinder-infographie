@@ -62,9 +62,10 @@ class Case:
         elif self.trav:
             return (1 - self.trav, self.trav, 0)
         elif self.status == Status.VISITED:
-            return (1 / 32 * self.poids, 1 / 32 * self.poids, 1 / 32 * self.poids)
+            return (self.poids / 128, self.poids / 128, self.poids / 128)
+            # return (self.poids / 128, 1, 0.55)  # nice toxic waste effect
         else:
-            return (1 / 32 * self.poids, 0.85, 1)
+            return (self.poids / 128, 0.85, 1)
 
     def clean(self):
         if self.poids == inf:
@@ -93,33 +94,33 @@ class Case:
         glVertex3f(w, 0, h + size)
 
         # face du haut
-        glVertex3f(w, self.poids * 3, h)
-        glVertex3f(w + size, self.poids * 3, h)
-        glVertex3f(w + size, self.poids * 3, h + size)
-        glVertex3f(w, self.poids * 3, h + size)
+        glVertex3f(w, self.poids, h)
+        glVertex3f(w + size, self.poids, h)
+        glVertex3f(w + size, self.poids, h + size)
+        glVertex3f(w, self.poids, h + size)
 
         # face de derrière
         glVertex3f(w, 0, h)
         glVertex3f(w + size, 0, h)
-        glVertex3f(w + size, self.poids * 3, h)
-        glVertex3f(w, self.poids * 3, h)
+        glVertex3f(w + size, self.poids, h)
+        glVertex3f(w, self.poids, h)
 
         # face de devant
         glVertex3f(w, 0, h + size)
         glVertex3f(w + size, 0, h + size)
-        glVertex3f(w + size, self.poids * 3, h + size)
-        glVertex3f(w, self.poids * 3, h + size)
+        glVertex3f(w + size, self.poids, h + size)
+        glVertex3f(w, self.poids, h + size)
 
         # face de gauche
         glVertex3f(w, 0, h)
-        glVertex3f(w, self.poids * 3, h)
-        glVertex3f(w, self.poids * 3, h + size)
+        glVertex3f(w, self.poids, h)
+        glVertex3f(w, self.poids, h + size)
         glVertex3f(w, 0, h + size)
 
         # face de gauche
         glVertex3f(w + size, 0, h)
-        glVertex3f(w + size, self.poids * 3, h)
-        glVertex3f(w + size, self.poids * 3, h + size)
+        glVertex3f(w + size, self.poids, h)
+        glVertex3f(w + size, self.poids, h + size)
         glVertex3f(w + size, 0, h + size)
 
         glEnd()
@@ -182,7 +183,7 @@ class Grille:
 
         self.zoom = 3 * taille * max(i, j)
         self.theta = 0
-        self.phi = pi / 2
+        self.phi = pi/2 - pi/10
 
         self.perspective = False
 
@@ -197,7 +198,7 @@ class Grille:
         for ligne in range(1, self.i + 1):
             self.cases[ligne].append(Case(ligne, 0, inf))
             for colonne in range(1, self.j + 1):
-                case = Case(ligne, colonne, choice(list(range(1, 33))))
+                case = Case(ligne, colonne, choice(list(range(1, 129))))
                 self.cases[ligne].append(case)
             self.cases[ligne].append(Case(ligne, self.j + 1, inf))
 
@@ -217,7 +218,7 @@ class Grille:
 
         self.zoom = 3 * self.taille * max(self.i, self.j)
         self.theta = 0
-        self.phi = pi / 2
+        self.phi = pi/2 - pi/10
 
         self.perspective = False
 
@@ -325,7 +326,7 @@ class Grille:
                 self.arr.arrivee()
 
 
-grille = Grille(25, 40, 37)
+grille = Grille(29, 42, 32)
 
 
 def init():
@@ -355,7 +356,7 @@ def reshape(width, height):
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
     if grille.perspective:
-        gluPerspective(20, width / height, 200, 10000)
+        gluPerspective(16, width / height, 200, 10000)
     else:
         glOrtho(0, width, height, 0, 20, 0)
     glMatrixMode(GL_MODELVIEW)
