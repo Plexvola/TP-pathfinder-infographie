@@ -183,7 +183,7 @@ class Grille:
 
         self.zoom = 3 * taille * max(i, j)
         self.theta = 0
-        self.phi = pi/2 - pi/10
+        self.phi = pi / 2 - pi / 10
 
         self.perspective = False
 
@@ -196,11 +196,12 @@ class Grille:
 
         for ligne in range(1, self.i + 1):
             self.cases[ligne][0] = Case(ligne, 0, inf)
-            self.cases[ligne][self.j+1] = Case(ligne, self.j+1, inf)
+            self.cases[ligne][self.j + 1] = Case(ligne, self.j + 1, inf)
             for colonne in range(1, self.j + 1):
                 self.cases[ligne][colonne] = Case(ligne, colonne, randrange(1, 129))
 
         weights = [[[] for _ in range(self.j + 2)] for _ in range(self.i + 2)]
+
         for case in chain(*self.cases):
             if case.status != Status.NONTRAVERSABLE:
                 weights[case.x][case.y] = self.smooth(case)
@@ -221,7 +222,7 @@ class Grille:
 
         self.zoom = 3 * self.taille * max(self.i, self.j)
         self.theta = 0
-        self.phi = pi/2 - pi/10
+        self.phi = pi / 2 - pi / 10
 
         self.perspective = False
 
@@ -242,12 +243,16 @@ class Grille:
 
     def neighbors(self, case):
         """Find all traversable neighbors."""
-        adjacents = filter(lambda c: c != (case.x, case.y),
-                           product([case.x - 1, case.x, case.x + 1],
-                                   [case.y - 1, case.y, case.y + 1]))
+        adjacents = filter(
+            lambda c: c != (case.x, case.y),
+            product([case.x - 1, case.x, case.x + 1], [case.y - 1, case.y, case.y + 1]),
+        )
 
-        cases_adj = [self.cases[x][y] for x, y in adjacents if
-                     self.cases[x][y].status != Status.NONTRAVERSABLE]
+        cases_adj = [
+            self.cases[x][y]
+            for x, y in adjacents
+            if self.cases[x][y].status != Status.NONTRAVERSABLE
+        ]
 
         return cases_adj
 
