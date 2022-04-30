@@ -187,24 +187,27 @@ class Grille:
 
         self.perspective = False
 
-        self.cases = [[] for _ in range(i + 2)]
         self.generate()
 
     def generate(self):
-
+        self.cases = [[[] for _ in range(self.j + 2)] for _ in range(self.i + 2)]
         self.cases[0] = [Case(0, x, inf) for x in range(self.j + 2)]
         self.cases[self.i + 1] = [Case(self.i + 1, x, inf) for x in range(self.j + 2)]
 
         for ligne in range(1, self.i + 1):
-            self.cases[ligne].append(Case(ligne, 0, inf))
+            self.cases[ligne][0] = Case(ligne, 0, inf)
+            self.cases[ligne][self.j+1] = Case(ligne, self.j+1, inf)
             for colonne in range(1, self.j + 1):
-                case = Case(ligne, colonne, choice(list(range(1, 129))))
-                self.cases[ligne].append(case)
-            self.cases[ligne].append(Case(ligne, self.j + 1, inf))
+                self.cases[ligne][colonne] = Case(ligne, colonne, randrange(1, 129))
 
-        for column in self.cases[1:-1]:
-            for case in column[1:-1]:
-                case.poids = self.smooth(case)
+        weights = [[[] for _ in range(self.j + 2)] for _ in range(self.i + 2)]
+        for case in chain(*self.cases):
+            if case.status != Status.NONTRAVERSABLE:
+                weights[case.x][case.y] = self.smooth(case)
+
+        for case in chain(*self.cases):
+            if case.status != Status.NONTRAVERSABLE:
+                case.poids = weights[case.x][case.y]
 
     def smooth(self, case):
         """Flattens the case to the level of its neighbors."""
@@ -239,10 +242,9 @@ class Grille:
 
     def neighbors(self, case):
         """Find all traversable neighbors."""
-        adjacents = filter(
-            lambda c: c != (case.x, case.y),
-            product([case.x - 1, case.x, case.x + 1], [case.y - 1, case.y, case.y + 1]),
-        )
+        adjacents = filter(lambda c: c != (case.x, case.y),
+                           product([case.x - 1, case.x, case.x + 1],
+                                   [case.y - 1, case.y, case.y + 1]))
 
         cases_adj = [self.cases[x][y] for x, y in adjacents if
                      self.cases[x][y].status != Status.NONTRAVERSABLE]
