@@ -206,9 +206,9 @@ class Grille:
             if case.status != Status.NONTRAVERSABLE:
                 weights[case.x][case.y] = self.smooth(case)
 
-        for case in chain(*self.cases):
-            if case.status != Status.NONTRAVERSABLE:
-                case.poids = weights[case.x][case.y]
+        # for case in chain(*self.cases):
+        #     if case.status != Status.NONTRAVERSABLE:
+        #         case.poids = weights[case.x][case.y]
 
     def smooth(self, case):
         """Flattens the case to the level of its neighbors."""
@@ -256,23 +256,36 @@ class Grille:
 
         return cases_adj
 
-    def dijkstra(self, smallest):
+    def dijkstra(self, smallest, time=0.01):
         """Visit a case according to the Dijkstra's algorithm."""
-        current = smallest()
-        for case in self.neighbors(current):
-            if case.status == Status.UNVISITED:
-                dis = current.distance + current.longueur(case)
-                if dis < case.distance:
-                    case.distance = dis
-                    case.prev = current
+        while smallest().distance != inf and self.arr.status != Status.VISITED:
+            current = smallest()
+            for case in self.neighbors(current):
+                if case.status == Status.UNVISITED:
+                    dis = current.distance + current.longueur(case)
+                    if dis < case.distance:
+                        case.distance = dis
+                        case.prev = current
 
-        current.status = Status.VISITED
+            current.status = Status.VISITED
+            sleep(time)
 
-    def path(self):
+    def depth_first(self, case, time=0.01):
+        if case == self.arr:
+            return True
+        for c in self.neighbors(case):
+            if c.status == Status.UNVISITED:
+                print(case)
+                c.status = Status.VISITED
+                c.prev = case
+                sleep(time)
+                if self.depth_first(c, time):
+                    return True
+
+
+    def path(self, algorithm, *args):
         """Return a list containing the path from the start case to the end case."""
-        while self.smallest().distance != inf and self.arr.status != Status.VISITED:
-            self.dijkstra(self.astar)
-            sleep(0.01)
+        algorithm(*args)
 
         case = self.arr
         cases_path = []
@@ -309,7 +322,8 @@ class Grille:
                     self.cases[ligne][colonne].draw_sel(self.taille)
 
     def drawpath(self):
-        path = grille.path()
+        path = grille.path(grille.dijkstra, grille.astar)
+        # path = grille.path(grille.depth_first, grille.smallest())
         for case in path:
             case.traverser(path[-1].distance)
             sleep(0.05)
