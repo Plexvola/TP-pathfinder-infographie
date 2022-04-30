@@ -4,7 +4,7 @@ import threading
 from enum import Enum
 from itertools import chain, product
 from math import cos, inf, pi, pow, sin, sqrt
-from random import choice, randrange
+from random import randrange
 from time import sleep
 
 from OpenGL.GL import (GL_COLOR_BUFFER_BIT, GL_COLOR_MATERIAL,
@@ -17,7 +17,8 @@ from OpenGL.GL import (GL_COLOR_BUFFER_BIT, GL_COLOR_MATERIAL,
                        glMultMatrixf, glOrtho, glPopMatrix, glPushMatrix,
                        glRotatef, glShadeModel, glTranslatef, glVertex2f,
                        glVertex3f, glViewport)
-from OpenGL.GLU import gluLookAt, gluPerspective
+from OpenGL.GLU import (GLU_SMOOTH, gluLookAt, gluNewQuadric, gluPerspective,
+                        gluQuadricDrawStyle, gluSphere)
 from OpenGL.GLUT import (GLUT_DEPTH, GLUT_DOUBLE, GLUT_RGBA,
                          GLUT_WINDOW_HEIGHT, GLUT_WINDOW_WIDTH,
                          glutCreateWindow, glutDestroyWindow, glutDisplayFunc,
@@ -32,6 +33,22 @@ class Status(Enum):
     VISITED = 0
     UNVISITED = 1
     NONTRAVERSABLE = 2
+
+
+class Worm:
+    """A little worm to travel the earth."""
+
+    def __init__(self, x, y, size, nodes):
+        """Initialize the worm."""
+        self.x = x
+        self.y = y
+        self.size = size
+        self.quadric = gluNewQuadric()
+        gluQuadricDrawStyle(self.quadric, GLU_SMOOTH)
+
+    def draw(self):
+        glColor(1, 1, 0, 1)
+        gluSphere(self.quadric, 0, 20, 16)
 
 
 class Case:
@@ -108,7 +125,7 @@ class Case:
     def bridge_color(self, case):
         if self.start or self.end or self.trav:
             if case.start or case.end or case.trav:
-                return ((n+m)/2 for n, m in zip(self.color(), case.color()))
+                return ((n + m) / 2 for n, m in zip(self.color(), case.color()))
             else:
                 return case.color()
 
@@ -116,12 +133,12 @@ class Case:
             if case.start or case.end or case.trav:
                 return self.color()
             else:
-                return ((n+m)/2 for n, m in zip(self.color(), case.color()))
+                return ((n + m) / 2 for n, m in zip(self.color(), case.color()))
 
     def bridge_color_diagonal(self, case, opposite=None):
         if self.start or self.end or self.trav:
             if case.start or case.end or case.trav:
-                return ((n+m)/2 for n, m in zip(self.color(), case.color()))
+                return ((n + m) / 2 for n, m in zip(self.color(), case.color()))
             else:
                 return opposite[0].bridge_color(opposite[1])
         else:
@@ -135,25 +152,27 @@ class Case:
             if diff == (1, 0):
                 glBegin(GL_QUADS)
                 glColor3f(*self.bridge_color(case))
-                glVertex3f(w + size,   self.poids, h)
-                glVertex3f(w + size,   self.poids, h + size)
-                glVertex3f(w + size*2, case.poids, h + size)
-                glVertex3f(w + size*2, case.poids, h)
+                glVertex3f(w + size, self.poids, h)
+                glVertex3f(w + size, self.poids, h + size)
+                glVertex3f(w + size * 2, case.poids, h + size)
+                glVertex3f(w + size * 2, case.poids, h)
                 glEnd()
             elif diff == (0, 1):
                 glBegin(GL_QUADS)
                 glColor3f(*self.bridge_color(case))
                 glVertex3f(w + size, self.poids, h + size)
-                glVertex3f(w,        self.poids, h + size)
-                glVertex3f(w,        case.poids, h + size*2)
-                glVertex3f(w + size, case.poids, h + size*2)
+                glVertex3f(w, self.poids, h + size)
+                glVertex3f(w, case.poids, h + size * 2)
+                glVertex3f(w + size, case.poids, h + size * 2)
                 glEnd()
             elif diff == (-1, -1):
                 # 0-1, -10
                 glBegin(GL_TRIANGLES)
-                glColor3f(*self.bridge_color_diagonal(case,
-                                                      (neighbors[(0,-1)],
-                                                       neighbors[(-1,0)])))
+                glColor3f(
+                    *self.bridge_color_diagonal(
+                        case, (neighbors[(0, -1)], neighbors[(-1, 0)])
+                    )
+                )
                 glVertex3f(w, self.poids, h)
                 glVertex3f(w - size, neighbors[(-1, 0)].poids, h)
                 glVertex3f(w, neighbors[(0, -1)].poids, h - size)
@@ -161,8 +180,11 @@ class Case:
             elif diff == (1, 1):
                 # 01, 10
                 glBegin(GL_TRIANGLES)
-                glColor3f(*self.bridge_color_diagonal(case, (neighbors[(0,1)],
-                                                             neighbors[(1,0)])))
+                glColor3f(
+                    *self.bridge_color_diagonal(
+                        case, (neighbors[(0, 1)], neighbors[(1, 0)])
+                    )
+                )
                 glVertex3f(w + size, self.poids, h + size)
                 glVertex3f(w + size * 2, neighbors[(1, 0)].poids, h + size)
                 glVertex3f(w + size, neighbors[(0, 1)].poids, h + size * 2)
@@ -335,8 +357,8 @@ class Grille:
                 if self.perspective:
                     self.cases[ligne][colonne].draw(self.taille)
                     self.cases[ligne][colonne].draw_bridge(
-                        self.neighbors(self.cases[ligne][colonne]),
-                        self.taille)
+                        self.neighbors(self.cases[ligne][colonne]), self.taille
+                    )
                 else:
                     self.cases[ligne][colonne].draw_sel(self.taille)
 
@@ -366,6 +388,7 @@ class Grille:
 
 
 grille = Grille(29, 42, 32)
+
 
 def init():
     """Initialise la fenêtre OpenGL."""
