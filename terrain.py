@@ -83,6 +83,7 @@ class Case:
         """Affiche la case à l'écran."""
         w = self.x * size
         h = self.y * size
+        elevation = self.poids
         glPushMatrix()
         glBegin(GL_QUADS)
         glColor3f(*self.color())
@@ -94,33 +95,33 @@ class Case:
         glVertex3f(w, 0, h + size)
 
         # face du haut
-        glVertex3f(w, self.poids, h)
-        glVertex3f(w + size, self.poids, h)
-        glVertex3f(w + size, self.poids, h + size)
-        glVertex3f(w, self.poids, h + size)
+        glVertex3f(w, elevation, h)
+        glVertex3f(w + size, elevation, h)
+        glVertex3f(w + size, elevation, h + size)
+        glVertex3f(w, elevation, h + size)
 
         # face de derrière
         glVertex3f(w, 0, h)
         glVertex3f(w + size, 0, h)
-        glVertex3f(w + size, self.poids, h)
-        glVertex3f(w, self.poids, h)
+        glVertex3f(w + size, elevation, h)
+        glVertex3f(w, elevation, h)
 
         # face de devant
         glVertex3f(w, 0, h + size)
         glVertex3f(w + size, 0, h + size)
-        glVertex3f(w + size, self.poids, h + size)
-        glVertex3f(w, self.poids, h + size)
+        glVertex3f(w + size, elevation, h + size)
+        glVertex3f(w, elevation, h + size)
 
         # face de gauche
         glVertex3f(w, 0, h)
-        glVertex3f(w, self.poids, h)
-        glVertex3f(w, self.poids, h + size)
+        glVertex3f(w, elevation, h)
+        glVertex3f(w, elevation, h + size)
         glVertex3f(w, 0, h + size)
 
         # face de gauche
         glVertex3f(w + size, 0, h)
-        glVertex3f(w + size, self.poids, h)
-        glVertex3f(w + size, self.poids, h + size)
+        glVertex3f(w + size, elevation, h)
+        glVertex3f(w + size, elevation, h + size)
         glVertex3f(w + size, 0, h + size)
 
         glEnd()
