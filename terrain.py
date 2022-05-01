@@ -207,9 +207,9 @@ class Grille:
             if case.status != Status.NONTRAVERSABLE:
                 weights[case.x][case.y] = self.smooth(case)
 
-        # for case in chain(*self.cases):
-        #     if case.status != Status.NONTRAVERSABLE:
-        #         case.poids = weights[case.x][case.y]
+        for case in chain(*self.cases):
+            if case.status != Status.NONTRAVERSABLE:
+                case.poids = weights[case.x][case.y]
 
     def smooth(self, case):
         """Flattens the case to the level of its neighbors."""
@@ -220,10 +220,6 @@ class Grille:
     def clean(self):
         self.dep = None
         self.arr = None
-
-        self.zoom = 3 * self.taille * max(self.i, self.j)
-        self.theta = 0
-        self.phi = pi / 2 - pi / 10
 
         self.perspective = False
 
