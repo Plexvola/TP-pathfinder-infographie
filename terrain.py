@@ -418,7 +418,6 @@ def keyboard(key, x, y):
 
     if key == b"q":
         glutDestroyWindow(glutGetWindow())
-        exit(0)
 
     if key != b"q":
         glutPostRedisplay()
