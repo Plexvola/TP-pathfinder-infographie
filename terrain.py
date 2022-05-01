@@ -97,15 +97,16 @@ class Case:
         """Affiche la case à l'écran."""
         w = self.x * size * 2
         h = self.y * size * 2
+        elevation = self.poids
         glPushMatrix()
         glBegin(GL_QUADS)
         glColor3f(*self.color())
 
         # face du haut
-        glVertex3f(w, self.poids, h)
-        glVertex3f(w + size, self.poids, h)
-        glVertex3f(w + size, self.poids, h + size)
-        glVertex3f(w, self.poids, h + size)
+        glVertex3f(w, elevation, h)
+        glVertex3f(w + size, elevation, h)
+        glVertex3f(w + size, elevation, h + size)
+        glVertex3f(w, elevation, h + size)
 
         glEnd()
         glPopMatrix()
@@ -271,10 +272,6 @@ class Grille:
         self.dep = None
         self.arr = None
 
-        self.zoom = 6 * self.taille * max(self.i, self.j)
-        self.theta = 0
-        self.phi = pi / 2 - pi / 10
-
         self.perspective = False
 
         for col in self.cases:
@@ -307,23 +304,35 @@ class Grille:
 
         return cases_adj
 
-    def dijkstra(self, smallest):
+    def dijkstra(self, smallest, time=0.01):
         """Visit a case according to the Dijkstra's algorithm."""
-        current = smallest()
-        for case in self.neighbors(current):
-            if case.status == Status.UNVISITED:
-                dis = current.distance + current.longueur(case)
-                if dis < case.distance:
-                    case.distance = dis
-                    case.prev = current
+        while smallest().distance != inf and self.arr.status != Status.VISITED:
+            current = smallest()
+            for case in self.neighbors(current):
+                if case.status == Status.UNVISITED:
+                    dis = current.distance + current.longueur(case)
+                    if dis < case.distance:
+                        case.distance = dis
+                        case.prev = current
 
-        current.status = Status.VISITED
+            current.status = Status.VISITED
+            sleep(time)
 
-    def path(self):
+    def depth_first(self, case, time=0.01):
+        if case == self.arr:
+            return True
+        for c in self.neighbors(case):
+            if c.status == Status.UNVISITED:
+                print(case)
+                c.status = Status.VISITED
+                c.prev = case
+                sleep(time)
+                if self.depth_first(c, time):
+                    return True
+
+    def path(self, algorithm, *args):
         """Return a list containing the path from the start case to the end case."""
-        while self.smallest().distance != inf and self.arr.status != Status.VISITED:
-            self.dijkstra(self.astar)
-            # sleep(0.01)
+        algorithm(*args)
 
         case = self.arr
         cases_path = []
@@ -363,7 +372,7 @@ class Grille:
                     self.cases[ligne][colonne].draw_sel(self.taille)
 
     def drawpath(self):
-        path = grille.path()
+        path = grille.path(grille.dijkstra, grille.astar)
         for case in path:
             case.traverser(path[-1].distance)
             sleep(0.05)
