@@ -35,10 +35,11 @@ class Status(Enum):
 class Worm:
     """A little worm to travel the earth."""
 
-    def __init__(self, x, y, size):
+    def __init__(self, x, y, z, size):
         """Initialize the worm."""
         self.x = x
         self.y = y
+        self.z = z
         self.size = size
         self.quadric = gluNewQuadric()
         gluQuadricDrawStyle(self.quadric, GLU_SMOOTH)
@@ -46,9 +47,9 @@ class Worm:
     def draw(self):
         """Draws the worm."""
         glColor3f(1, 1, 0)
-        glTranslatef(-self.x, 0, -self.z)
-        gluSphere(self.quadric, 0, 20, 16)
-        glTranslatef(self.x, 0, self.z)
+        glTranslatef(-self.x, -self.y, -self.z)
+        gluSphere(self.quadric, 1, 20, 16)
+        glTranslatef(self.x, self.y, self.z)
 
 
 class Case:
@@ -414,7 +415,9 @@ def display():
     global grille
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     glLoadIdentity()
-    grille.draw()
+    # grille.draw()
+    worm = Worm(0, 0, 0, 10)
+    worm.draw()
 
     glutSwapBuffers()
 
@@ -441,8 +444,9 @@ def keyboard(key, x, y):
         init()
         reshape(glutGet(GLUT_WINDOW_WIDTH), glutGet(GLUT_WINDOW_HEIGHT))
         if grille.perspective:
-            draw = threading.Thread(target=grille.drawpath, daemon=True)
-            draw.start()
+            # draw = threading.Thread(target=grille.drawpath, daemon=True)
+            # draw.start()
+            pass
         else:
             grille.reset()
 
@@ -462,7 +466,6 @@ def keyboard(key, x, y):
 
     if key == b"q":
         glutDestroyWindow(glutGetWindow())
-        exit(0)
 
     if key != b"q":
         glutPostRedisplay()
