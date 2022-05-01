@@ -318,21 +318,9 @@ class Grille:
             current.status = Status.VISITED
             sleep(time)
 
-    def depth_first(self, case, time=0.01):
-        if case == self.arr:
-            return True
-        for c in self.neighbors(case):
-            if c.status == Status.UNVISITED:
-                print(case)
-                c.status = Status.VISITED
-                c.prev = case
-                sleep(time)
-                if self.depth_first(c, time):
-                    return True
-
     def path(self, algorithm, *args):
         """Return a list containing the path from the start case to the end case."""
-        algorithm(*args)
+        algorithm(*args, 0)
 
         case = self.arr
         cases_path = []
