@@ -4,31 +4,28 @@ import threading
 from enum import Enum
 from itertools import chain, product
 from math import cos, inf, pi, pow, sin, sqrt
-from random import choice, randrange
+from random import randrange
 from time import sleep
 
-from OpenGL.GL import (GL_COLOR_BUFFER_BIT, GL_COLOR_MATERIAL,
-                       GL_DEPTH_BUFFER_BIT, GL_DEPTH_TEST, GL_FLAT, GL_LESS,
-                       GL_LIGHT0, GL_LIGHTING, GL_MODELVIEW, GL_POLYGON,
-                       GL_PROJECTION, GL_QUADS, GL_TRIANGLES, GL_VIEWPORT,
-                       GLsizei, glBegin, glClear, glClearColor, glColor3f,
-                       glColor4f, glDepthFunc, glDisable, glEnable, glEnd,
-                       glFrustum, glget, glLoadIdentity, glMatrixMode,
-                       glMultMatrixf, glOrtho, glPopMatrix, glPushMatrix,
-                       glRotatef, glShadeModel, glTranslatef, glVertex2f,
+from OpenGL.GL import (GL_COLOR_BUFFER_BIT, GL_DEPTH_BUFFER_BIT, GL_DEPTH_TEST,
+                       GL_MODELVIEW, GL_PROJECTION, GL_QUADS, glBegin, glClear,
+                       glClearColor, glColor3f, glDisable, glEnable, glEnd,
+                       glLoadIdentity, glMatrixMode, glOrtho, glPopMatrix,
+                       glPushMatrix, glRotatef, glTranslatef, glVertex2f,
                        glVertex3f, glViewport)
 from OpenGL.GLU import gluLookAt, gluPerspective
 from OpenGL.GLUT import (GLUT_DEPTH, GLUT_DOUBLE, GLUT_RGBA,
                          GLUT_WINDOW_HEIGHT, GLUT_WINDOW_WIDTH,
                          glutCreateWindow, glutDestroyWindow, glutDisplayFunc,
-                         glutFullScreen, glutGet, glutGetWindow, glutIdleFunc,
-                         glutInit, glutInitDisplayMode, glutKeyboardFunc,
-                         glutMainLoop, glutMouseFunc, glutPostRedisplay,
-                         glutReshapeFunc, glutReshapeWindow, glutSolidCube,
-                         glutSwapBuffers)
+                         glutGet, glutGetWindow, glutIdleFunc, glutInit,
+                         glutInitDisplayMode, glutKeyboardFunc, glutMainLoop,
+                         glutMouseFunc, glutPostRedisplay, glutReshapeFunc,
+                         glutReshapeWindow, glutSwapBuffers)
 
 
 class Status(Enum):
+    """Le statut possible de chaque case."""
+
     VISITED = 0
     UNVISITED = 1
     NONTRAVERSABLE = 2
@@ -53,6 +50,7 @@ class Case:
         self.trav = None
 
     def color(self):
+        """Une fonction renvoyant la couleur de chaque case."""
         if self.status == Status.NONTRAVERSABLE:
             return (0.2, 0.2, 0.2)
         elif self.end:
@@ -67,7 +65,8 @@ class Case:
         else:
             return (self.poids / 128, 0.85, 1)
 
-    def clean(self):
+    def reset(self):
+        """Une fonction qui réinitialise la case."""
         if self.poids == inf:
             self.status = Status.NONTRAVERSABLE
         else:
@@ -159,12 +158,15 @@ class Case:
         return distance_diag
 
     def __repr__(self):
+        """Returns the case under string representation."""
         return f"({self.x},{self.y}): {self.poids}"
 
     def __lt__(self, other):
+        """Returns lesser-than comparisons between two cases."""
         return self.distance < other.distance
 
     def __gt__(self, other):
+        """Returns greater-than comparisons between two cases."""
         return self.distance > other.distance
 
 
@@ -188,9 +190,10 @@ class Grille:
 
         self.perspective = False
 
-        self.generate()
+        self.generate(True)
 
-    def generate(self):
+    def generate(self, smooth):
+        """Remplit la grille de cases initialisées. Peut être adoucie."""
         self.cases = [[[] for _ in range(self.j + 2)] for _ in range(self.i + 2)]
         self.cases[0] = [Case(0, x, inf) for x in range(self.j + 2)]
         self.cases[self.i + 1] = [Case(self.i + 1, x, inf) for x in range(self.j + 2)]
@@ -203,13 +206,14 @@ class Grille:
 
         weights = [[[] for _ in range(self.j + 2)] for _ in range(self.i + 2)]
 
-        for case in chain(*self.cases):
-            if case.status != Status.NONTRAVERSABLE:
-                weights[case.x][case.y] = self.smooth(case)
+        if smooth:
+            for case in chain(*self.cases):
+                if case.status != Status.NONTRAVERSABLE:
+                    weights[case.x][case.y] = self.smooth(case)
 
-        for case in chain(*self.cases):
-            if case.status != Status.NONTRAVERSABLE:
-                case.poids = weights[case.x][case.y]
+            for case in chain(*self.cases):
+                if case.status != Status.NONTRAVERSABLE:
+                    case.poids = weights[case.x][case.y]
 
     def smooth(self, case):
         """Flattens the case to the level of its neighbors."""
@@ -217,7 +221,8 @@ class Grille:
         n = [c.poids for c in self.neighbors(case)]
         return sum(n) // len(n)
 
-    def clean(self):
+    def reset(self):
+        """Réinitialise la grille et ses cases, sans modifier leur poids."""
         self.dep = None
         self.arr = None
 
@@ -225,7 +230,7 @@ class Grille:
 
         for col in self.cases:
             for case in col:
-                case.clean()
+                case.reset()
 
     def smallest(self):
         """Find the smallest unvisited case."""
@@ -254,7 +259,7 @@ class Grille:
         return cases_adj
 
     def dijkstra(self, smallest, time=0.01):
-        """Visit a case according to the Dijkstra's algorithm."""
+        """Fills each case's attributes according to Dijkstra's algorithm."""
         while smallest().distance != inf and self.arr.status != Status.VISITED:
             current = smallest()
             for case in self.neighbors(current):
@@ -267,18 +272,20 @@ class Grille:
             current.status = Status.VISITED
             sleep(time)
 
-    def depth_first(self, case, time=0.01):
-        if case == self.arr:
-            return True
-        for c in self.neighbors(case):
-            if c.status == Status.UNVISITED:
-                print(case)
-                c.status = Status.VISITED
-                c.prev = case
-                sleep(time)
-                if self.depth_first(c, time):
-                    return True
-
+    def breadth_first(self, case, time=0.01):
+        """Fills each case's attributes according to a breadth-first algorithm."""
+        queue = [case]
+        for current in queue:
+            if current == self.arr:
+                return
+            elif current.status == Status.UNVISITED:
+                for n in self.neighbors(current):
+                    if n.status == Status.UNVISITED:
+                        n.prev = current
+                        n.distance = current.distance + current.longueur(n)
+                        queue.append(n)
+                current.status = Status.VISITED
+            sleep(time)
 
     def path(self, algorithm, *args):
         """Return a list containing the path from the start case to the end case."""
@@ -319,8 +326,8 @@ class Grille:
                     self.cases[ligne][colonne].draw_sel(self.taille)
 
     def drawpath(self):
+        """Draws the path on the grid, after initalization of the start and end case."""
         path = grille.path(grille.dijkstra, grille.astar)
-        # path = grille.path(grille.depth_first, grille.smallest())
         for case in path:
             case.traverser(path[-1].distance)
             sleep(0.05)
@@ -344,7 +351,7 @@ class Grille:
                 self.arr.arrivee()
 
 
-grille = Grille(29, 42, 32)
+grille = Grille(20, 62, 47)
 
 
 def init():
@@ -393,7 +400,7 @@ def keyboard(key, x, y):
             draw.start()
 
         else:
-            grille.clean()
+            grille.reset()
 
     if grille.perspective:
         if key == b"z":
@@ -411,6 +418,7 @@ def keyboard(key, x, y):
 
     if key == b"q":
         glutDestroyWindow(glutGetWindow())
+        exit(0)
 
     if key != b"q":
         glutPostRedisplay()
