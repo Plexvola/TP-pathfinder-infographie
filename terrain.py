@@ -202,7 +202,7 @@ class Grille:
             self.cases[ligne][0] = Case(ligne, 0, inf)
             self.cases[ligne][self.j + 1] = Case(ligne, self.j + 1, inf)
             for colonne in range(1, self.j + 1):
-                self.cases[ligne][colonne] = Case(ligne, colonne, randrange(1, 129))
+                self.cases[ligne][colonne] = Case(ligne, colonne, randrange(129))
 
         weights = [[[] for _ in range(self.j + 2)] for _ in range(self.i + 2)]
 
@@ -351,7 +351,7 @@ class Grille:
                 self.arr.arrivee()
 
 
-grille = Grille(20, 62, 47)
+grille = Grille(32, 38, 29)
 
 
 def init():
