@@ -398,6 +398,8 @@ class Grille:
 
 
 grille = Grille(32, 38, 29)
+worm = Worm(0,0,0,10)
+
 
 def init():
     """Initialise la fenêtre OpenGL."""
@@ -411,11 +413,10 @@ def init():
 
 def display():
     """Affiche la fenêtre OpenGL."""
-    global grille
+    global grille, worm
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     glLoadIdentity()
     # grille.draw()
-    worm = Worm(0, 0, 0, 10)
     worm.draw()
 
     glutSwapBuffers()
