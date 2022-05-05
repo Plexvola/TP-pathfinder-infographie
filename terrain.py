@@ -9,7 +9,7 @@ from time import sleep
 
 from OpenGL.GL import (GL_COLOR_BUFFER_BIT, GL_DEPTH_BUFFER_BIT, GL_DEPTH_TEST,
                        GL_MODELVIEW, GL_PROJECTION, GL_QUADS, glBegin, glClear,
-                       glClearColor, glColor3f, glDisable, glEnable, glEnd,
+                       glClearColor, glColor, glDisable, glEnable, glEnd,
                        glLoadIdentity, glMatrixMode, glOrtho, glPopMatrix,
                        glPushMatrix, glRotatef, glTranslatef, glVertex2f,
                        glVertex3f, glViewport)
@@ -85,7 +85,7 @@ class Case:
         elevation = self.poids
         glPushMatrix()
         glBegin(GL_QUADS)
-        glColor3f(*self.color())
+        glColor(*self.color())
 
         # face du bas
         glVertex3f(w, 0, h)
@@ -130,7 +130,7 @@ class Case:
         """Affiche la case durant la sélection non-perspective."""
         glPushMatrix()
         glBegin(GL_QUADS)
-        glColor3f(*self.color())
+        glColor(*self.color())
         glVertex2f(self.x * size, self.y * size)
         glVertex2f(self.x * size + size, self.y * size)
         glVertex2f(self.x * size + size, self.y * size + size)
