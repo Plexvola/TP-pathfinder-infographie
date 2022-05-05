@@ -344,23 +344,6 @@ class Grille:
 
     def draw(self):
         """Draw the grid."""
-        if self.perspective:
-            x_offset = grille.taille * (grille.i + 2)
-            z_offset = grille.taille * (grille.j + 2)
-            gluLookAt(
-                x_offset,
-                grille.zoom * sin(grille.phi),
-                grille.zoom * cos(grille.phi) + z_offset,
-                x_offset,
-                0,
-                z_offset,
-                0,
-                cos(grille.phi),
-                -sin(grille.phi),
-            )
-            glTranslatef(x_offset, 0, z_offset)
-            glRotatef(self.theta, 0, 1, 0)
-            glTranslatef(-x_offset, 0, -z_offset)
         for ligne in range(1, self.i + 1):
             for colonne in range(1, self.j + 1):
                 if self.perspective:
@@ -419,9 +402,26 @@ def display():
     global grille, worm, quadric
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     glLoadIdentity()
-    # grille.draw()
-    # worm.draw()
 
+    if grille.perspective:
+        x_offset = grille.taille * (grille.i + 2) / 2
+        z_offset = grille.taille * (grille.j + 2) / 2
+        gluLookAt(
+            x_offset,
+            grille.zoom * sin(grille.phi),
+            grille.zoom * cos(grille.phi) + z_offset,
+            x_offset,
+            0,
+            z_offset,
+            0,
+            cos(grille.phi),
+            -sin(grille.phi),
+        )
+        glTranslatef(x_offset, 0, z_offset)
+        glRotatef(grille.theta, 0, 1, 0)
+        glTranslatef(-x_offset, 0, -z_offset)
+
+    # grille.draw()
     glPushMatrix()
 
     glColor(1, 1, 0, 1)
