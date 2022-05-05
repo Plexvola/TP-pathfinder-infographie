@@ -46,7 +46,7 @@ class Worm:
 
     def draw(self):
         """Draws the worm."""
-        glColor3f(1, 1, 0)
+        glColor(1, 1, 0)
         # glTranslatef(-self.x, -self.y, -self.z)
         gluSphere(self.quadric, 1, 20, 16)
         # glTranslatef(self.x, self.y, self.z)
@@ -158,7 +158,7 @@ class Case:
         for diff, case in neighbors.items():
             if diff == (1, 0):
                 glBegin(GL_QUADS)
-                glColor3f(*self.bridge_color(case))
+                glColor(*self.bridge_color(case))
                 glVertex3f(w + size, self.poids, h)
                 glVertex3f(w + size, self.poids, h + size)
                 glVertex3f(w + size * 2, case.poids, h + size)
@@ -166,7 +166,7 @@ class Case:
                 glEnd()
             elif diff == (0, 1):
                 glBegin(GL_QUADS)
-                glColor3f(*self.bridge_color(case))
+                glColor(*self.bridge_color(case))
                 glVertex3f(w + size, self.poids, h + size)
                 glVertex3f(w, self.poids, h + size)
                 glVertex3f(w, case.poids, h + size * 2)
@@ -175,7 +175,7 @@ class Case:
             elif diff == (-1, -1):
                 # 0-1, -10
                 glBegin(GL_TRIANGLES)
-                glColor3f(
+                glColor(
                     *self.bridge_color_diagonal(
                         case, (neighbors[(0, -1)], neighbors[(-1, 0)])
                     )
@@ -187,7 +187,7 @@ class Case:
             elif diff == (1, 1):
                 # 01, 10
                 glBegin(GL_TRIANGLES)
-                glColor3f(
+                glColor(
                     *self.bridge_color_diagonal(
                         case, (neighbors[(0, 1)], neighbors[(1, 0)])
                     )
@@ -399,25 +399,36 @@ class Grille:
 
 grille = Grille(32, 38, 29)
 worm = Worm(0, 0, 0, 10)
+quadric = None
 
 
 def init():
     """Initialise la fenêtre OpenGL."""
-    global grille
+    global grille, quadric
     if grille.perspective:
         glEnable(GL_DEPTH_TEST)
     else:
         glDisable(GL_DEPTH_TEST)
     glClearColor(0, 0, 0, 0)
+    quadric = gluNewQuadric()
+    gluQuadricDrawStyle(quadric, GLU_SMOOTH)
 
 
 def display():
     """Affiche la fenêtre OpenGL."""
-    global grille, worm
+    global grille, worm, quadric
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     glLoadIdentity()
     # grille.draw()
-    worm.draw()
+    # worm.draw()
+
+    glPushMatrix()
+
+    glColor(1, 1, 0, 1)
+    glRotatef(90, 1.0, 0.0, 0.0)
+    gluSphere(quadric, 1.0, 20, 16)
+
+    glPopMatrix()
 
     glutSwapBuffers()
 
