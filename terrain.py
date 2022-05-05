@@ -47,9 +47,9 @@ class Worm:
     def draw(self):
         """Draws the worm."""
         glColor3f(1, 1, 0)
-        glTranslatef(-self.x, -self.y, -self.z)
+        # glTranslatef(-self.x, -self.y, -self.z)
         gluSphere(self.quadric, 1, 20, 16)
-        glTranslatef(self.x, self.y, self.z)
+        # glTranslatef(self.x, self.y, self.z)
 
 
 class Case:
@@ -398,7 +398,7 @@ class Grille:
 
 
 grille = Grille(32, 38, 29)
-worm = Worm(0,0,0,10)
+worm = Worm(0, 0, 0, 10)
 
 
 def init():
@@ -444,8 +444,8 @@ def keyboard(key, x, y):
         init()
         reshape(glutGet(GLUT_WINDOW_WIDTH), glutGet(GLUT_WINDOW_HEIGHT))
         if grille.perspective:
-            # draw = threading.Thread(target=grille.drawpath, daemon=True)
-            # draw.start()
+            draw = threading.Thread(target=grille.drawpath, daemon=True)
+            draw.start()
             pass
         else:
             grille.reset()
