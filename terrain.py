@@ -12,9 +12,12 @@ from OpenGL.GL import (GL_COLOR_BUFFER_BIT, GL_DEPTH_BUFFER_BIT, GL_DEPTH_TEST,
                        glBegin, glClear, glClearColor, glColor, glDisable,
                        glEnable, glEnd, glLoadIdentity, glMatrixMode, glOrtho,
                        glPopMatrix, glPushMatrix, glRotatef, glTranslatef,
-                       glVertex2f, glVertex3f, glViewport)
+                       glVertex2f, glVertex3f, glViewport, GL_LIGHTING, GL_LIGHT0,
+                       GL_COLOR_MATERIAL, GL_FLAT, glLight, GL_POSITION, glShadeModel,
+                       glNormal3f, glMaterial, GL_FRONT, GL_BACK, GL_FRONT_AND_BACK,
+                       GL_SHININESS, GL_AMBIENT, GL_DIFFUSE, GL_AMBIENT_AND_DIFFUSE)
 from OpenGL.GLU import (GLU_SMOOTH, gluLookAt, gluNewQuadric, gluPerspective,
-                        gluQuadricDrawStyle, gluSphere)
+                        gluQuadricDrawStyle, gluSphere, GLU_FLAT)
 from OpenGL.GLUT import (GLUT_DEPTH, GLUT_DOUBLE, GLUT_RGBA,
                          GLUT_WINDOW_HEIGHT, GLUT_WINDOW_WIDTH,
                          glutCreateWindow, glutDestroyWindow, glutDisplayFunc,
@@ -35,21 +38,20 @@ class Status(Enum):
 class Worm:
     """A little worm to travel the earth."""
 
-    def __init__(self, x, y, z, size):
+    def __init__(self, radius):
         """Initialize the worm."""
-        self.x = x
-        self.y = y
-        self.z = z
-        self.size = size
+        self.x = 0
+        self.y = 0
+        self.z = 0
+        self.radius = radius
         self.quadric = gluNewQuadric()
-        gluQuadricDrawStyle(self.quadric, GLU_SMOOTH)
+        gluQuadricDrawStyle(self.quadric, GLU_FLAT)
 
-    def draw(self):
+    def draw(self, taille):
         """Draws the worm."""
         glColor(1, 1, 0)
-        # glTranslatef(-self.x, -self.y, -self.z)
-        gluSphere(self.quadric, 1, 20, 16)
-        # glTranslatef(self.x, self.y, self.z)
+        glTranslatef(taille * self.x + taille/4, self.y+self.radius, taille * self.z + taille/4)
+        gluSphere(self.quadric, self.radius, 20, 16)
 
 
 class Case:
@@ -116,7 +118,7 @@ class Case:
 
     def draw_sel(self, size):
         """Affiche la case durant la sélection non-perspective."""
-        glPushMatrix()
+        # glPushMatrix()
         glBegin(GL_QUADS)
         glColor(*self.color())
         glVertex2f(self.x * size, self.y * size)
@@ -124,7 +126,7 @@ class Case:
         glVertex2f(self.x * size + size, self.y * size + size)
         glVertex2f(self.x * size, self.y * size + size)
         glEnd()
-        glPopMatrix()
+        # glPopMatrix()
 
     def bridge_color(self, case):
         """Color a bridge between two cases."""
@@ -232,7 +234,7 @@ class Case:
 class Grille:
     """Grille composée de cases."""
 
-    def __init__(self, taille, i, j):
+    def __init__(self, taille, i, j, worm):
         """Crée une grille contenant des cases.
 
         Chaque case mesure taille, et la grille possède i x j cases.
@@ -240,12 +242,13 @@ class Grille:
         self.taille = taille
         self.i = i
         self.j = j
+        self.worm = worm
         self.dep = None
         self.arr = None
 
         self.zoom = 6 * taille * max(i, j)
         self.theta = 0
-        self.phi = pi / 2 - pi / 10
+        self.phi = 90
 
         self.perspective = False
 
@@ -359,7 +362,7 @@ class Grille:
         path = grille.path(grille.dijkstra, grille.astar)
         for case in path:
             case.traverser(path[-1].distance)
-            sleep(0.05)
+            sleep(0.1)
         print(self.arr.distance)
 
     def clic_case(self, x, y):
@@ -380,55 +383,63 @@ class Grille:
                 self.arr.arrivee()
 
 
-grille = Grille(32, 38, 29)
-worm = Worm(0, 0, 0, 10)
-quadric = None
+worm = Worm(20)
+grille = Grille(32, 38, 29, worm)
 
 
 def init():
     """Initialise la fenêtre OpenGL."""
-    global grille, quadric
+    global grille
     if grille.perspective:
         glEnable(GL_DEPTH_TEST)
+        glEnable(GL_LIGHTING)
+        glEnable(GL_LIGHT0)
     else:
         glDisable(GL_DEPTH_TEST)
-    glClearColor(0, 0, 0, 0)
-    quadric = gluNewQuadric()
-    gluQuadricDrawStyle(quadric, GLU_SMOOTH)
+        glDisable(GL_LIGHTING)
+        glDisable(GL_LIGHT0)
+    glEnable(GL_COLOR_MATERIAL)
+    glShadeModel(GL_FLAT)
 
 
 def display():
     """Affiche la fenêtre OpenGL."""
-    global grille, worm, quadric
+    global grille
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     glLoadIdentity()
 
     if grille.perspective:
-        x_offset = grille.taille * (grille.i + 2) / 2
-        z_offset = grille.taille * (grille.j + 2) / 2
+        # x_offset = grille.taille * (grille.i + 2) / 2
+        # z_offset = grille.taille * (grille.j + 2) / 2
         gluLookAt(
-            x_offset,
-            grille.zoom * sin(grille.phi),
-            grille.zoom * cos(grille.phi) + z_offset,
-            x_offset,
-            0,
-            z_offset,
-            0,
-            cos(grille.phi),
-            -sin(grille.phi),
+            0, 0, grille.zoom,
+            0, 0, 0,
+            0, 1, 0,
+            # 0, grille.zoom * sin(grille.phi), grille.zoom * cos(grille.phi),
+            # 0, 0, 0,
+            # 0, cos(grille.phi), -sin(grille.phi),
         )
-        glTranslatef(x_offset, 0, z_offset)
+        glTranslatef(0, 0, grille.taille * grille.worm.z * 2)
+        glRotatef(grille.phi, 1, 0, 0)
         glRotatef(grille.theta, 0, 1, 0)
-        glTranslatef(-x_offset, 0, -z_offset)
+        glTranslatef(-grille.taille * grille.worm.x * 2 - grille.taille/2,
+                     -grille.worm.y - grille.worm.radius,
+                     -grille.taille * grille.worm.z * 2 - grille.taille/2)
 
-    # grille.draw()
-    glPushMatrix()
+        # glTranslatef(x_offset, 0, z_offset)
+        # glRotatef(grille.theta, 0, 1, 0)
+        # glTranslatef(-x_offset, 0, -z_offset)
 
-    glColor(1, 1, 0, 1)
-    glRotatef(90, 1.0, 0.0, 0.0)
-    gluSphere(quadric, 1.0, 20, 16)
-
-    glPopMatrix()
+    # glPushMatrix()
+    grille.draw()
+    # glPopMatrix()
+    if grille.perspective and grille.dep:
+        # glPushMatrix()
+        grille.worm.x = grille.dep.x
+        grille.worm.y = grille.dep.poids
+        grille.worm.z = grille.dep.y
+        grille.worm.draw(grille.taille*2)
+        # glPopMatrix()
 
     glutSwapBuffers()
 
@@ -440,7 +451,7 @@ def reshape(width, height):
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
     if grille.perspective:
-        gluPerspective(16, width / height, 200, 10000)
+        gluPerspective(16, width / height, 200, 20000)
     else:
         glOrtho(0, width, height, 0, 20, 0)
     glMatrixMode(GL_MODELVIEW)
@@ -462,14 +473,16 @@ def keyboard(key, x, y):
             grille.reset()
 
     if grille.perspective:
-        if key == b"z":
-            grille.zoom -= 10
-        elif key == b"x":
-            grille.zoom += 10
+        if key == b"+":
+            grille.zoom -= 20
+        elif key == b"-":
+            grille.zoom += 20
         elif key == b"w":
-            grille.phi = (grille.phi + 0.02 * pi) % (pi * 2)
+            # grille.phi = (grille.phi + 0.02 * pi) % (pi * 2)
+            grille.phi = (grille.phi - 2) % 360
         elif key == b"s":
-            grille.phi = (grille.phi - 0.02 * pi) % (pi * 2)
+            # grille.phi = (grille.phi - 0.02 * pi) % (pi * 2)
+            grille.phi = (grille.phi + 2) % 360
         elif key == b"a":
             grille.theta = (grille.theta - 2) % 360
         elif key == b"d":
