@@ -22,6 +22,8 @@ from OpenGL.GLUT import (GLUT_DEPTH, GLUT_DOUBLE, GLUT_RGBA,
                          glutMouseFunc, glutPostRedisplay, glutReshapeFunc,
                          glutReshapeWindow, glutSwapBuffers)
 
+HEIGHT = 256
+
 
 class Status(Enum):
     """Le statut possible de chaque case."""
@@ -60,10 +62,10 @@ class Case:
         elif self.trav:
             return (1 - self.trav, self.trav, 0)
         elif self.status == Status.VISITED:
-            return (self.poids / 128, self.poids / 128, self.poids / 128)
-            # return (self.poids / 128, 1, 0.55)  # nice toxic waste effect
+            # return (self.poids / HEIGHT, self.poids / HEIGHT, self.poids / HEIGHT)
+            return (self.poids / HEIGHT, 1, 0.75)  # nice toxic waste effect
         else:
-            return (self.poids / 128, 0.85, 1)
+            return (self.poids / HEIGHT, 0.85, 1)
 
     def reset(self):
         """Une fonction qui réinitialise la case."""
@@ -78,11 +80,11 @@ class Case:
         self.end = False
         self.trav = None
 
-    def draw(self, size):
+    def draw(self, size, threshold):
         """Affiche la case à l'écran."""
         w = self.x * size
         h = self.y * size
-        elevation = self.poids
+        elevation = self.poids if self.poids != inf else threshold
         glPushMatrix()
         glBegin(GL_QUADS)
         glColor(*self.color())
@@ -189,6 +191,7 @@ class Grille:
         self.phi = pi / 2 - pi / 10
 
         self.perspective = False
+        self.threshold = 120
 
         self.generate(True)
 
@@ -202,7 +205,7 @@ class Grille:
             self.cases[ligne][0] = Case(ligne, 0, inf)
             self.cases[ligne][self.j + 1] = Case(ligne, self.j + 1, inf)
             for colonne in range(1, self.j + 1):
-                self.cases[ligne][colonne] = Case(ligne, colonne, randrange(129))
+                self.cases[ligne][colonne] = Case(ligne, colonne, randrange(HEIGHT+1))
 
         weights = [[[] for _ in range(self.j + 2)] for _ in range(self.i + 2)]
 
@@ -215,11 +218,16 @@ class Grille:
                 if case.status != Status.NONTRAVERSABLE:
                     case.poids = weights[case.x][case.y]
 
+        for case in chain(*self.cases):
+            if case.poids < self.threshold:
+                case.poids = inf
+                case.status = Status.NONTRAVERSABLE
+
     def smooth(self, case):
         """Flattens the case to the level of its neighbors."""
         print(case)
         n = [c.poids for c in self.neighbors(case)]
-        return sum(n) // len(n)
+        return sum(n) // len(n) if n else case.poids
 
     def reset(self):
         """Réinitialise la grille et ses cases, sans modifier leur poids."""
@@ -304,7 +312,7 @@ class Grille:
         for ligne in range(1, self.i + 1):
             for colonne in range(1, self.j + 1):
                 if self.perspective:
-                    self.cases[ligne][colonne].draw(self.taille)
+                    self.cases[ligne][colonne].draw(self.taille, self.threshold)
                 else:
                     self.cases[ligne][colonne].draw_sel(self.taille)
 
