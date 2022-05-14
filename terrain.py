@@ -5,7 +5,7 @@ import argparse
 import threading
 from enum import Enum
 from itertools import chain, product
-from math import cos, inf, pi, pow, sin, sqrt
+from math import cos, inf, pi, pow, sin, sqrt, comb
 from random import randrange
 from time import sleep
 
@@ -17,7 +17,8 @@ from OpenGL.GL import (GL_COLOR_BUFFER_BIT, GL_DEPTH_BUFFER_BIT, GL_DEPTH_TEST,
                        glVertex2f, glVertex3f, glViewport, GL_LIGHTING, GL_LIGHT0,
                        GL_COLOR_MATERIAL, GL_FLAT, glLight, GL_POSITION, glShadeModel,
                        glNormal3f, glMaterial, GL_FRONT, GL_BACK, GL_FRONT_AND_BACK,
-                       GL_SHININESS, GL_AMBIENT, GL_DIFFUSE, GL_AMBIENT_AND_DIFFUSE)
+                       GL_SHININESS, GL_AMBIENT, GL_DIFFUSE, GL_AMBIENT_AND_DIFFUSE,
+                       GL_LINES)
 from OpenGL.GLU import (GLU_SMOOTH, gluLookAt, gluNewQuadric, gluPerspective,
                         gluQuadricDrawStyle, gluSphere, GLU_FLAT)
 from OpenGL.GLUT import (GLUT_DEPTH, GLUT_DOUBLE, GLUT_RGBA,
@@ -29,6 +30,36 @@ from OpenGL.GLUT import (GLUT_DEPTH, GLUT_DOUBLE, GLUT_RGBA,
                          glutReshapeWindow, glutSwapBuffers)
 
 HEIGHT = 256
+
+def average_colors(col1, col2):
+    """Averages two colors in a sane way."""
+    return (sqrt((pow(col1[0], 2) + pow(col2[0], 2))/2),
+            sqrt((pow(col1[1], 2) + pow(col2[1], 2))/2),
+            sqrt((pow(col1[2], 2) + pow(col2[2], 2))/2))
+
+
+def bezier(p, t):
+    x = 0
+    y = 0
+    z = 0
+    i = 0
+    while i < len(p):
+        x += p[i].x * pow(1-t, i) * pow(t, len(p)-1 - i) * comb(len(p)-1, i)
+        y += p[i].poids * pow(1-t, i) * pow(t, len(p)-1 - i) * comb(len(p)-1, i)
+        z += p[i].y * pow(1-t, i) * pow(t, len(p)-1 - i) * comb(len(p)-1, i)
+        i += 1
+    return (x, y, z)
+
+# def interpolate(p1, p2, p3, p4, t):
+#     p12 = (p1[0] * (1-t) + p2[0] * t, p1[1] * (1-t) + p2[1] * t, p1[2] * (1-t) + p2[2] * t)
+#     p23 = (p2[0] * (1-t) + p3[0] * t, p2[1] * (1-t) + p3[1] * t, p2[2] * (1-t) + p3[2] * t)
+#     p34 = (p3[0] * (1-t) + p4[0] * t, p3[1] * (1-t) + p4[1] * t, p3[2] * (1-t) + p4[2] * t)
+#     p123 = (p12[0] * (1-t) + p23[0] * t, p12[1] * (1-t) + p23[1] * t, p12[2] * (1-t) + p23[2] * t)
+#     p234 = (p23[0] * (1-t) + p34[0] * t, p23[1] * (1-t) + p34[1] * t, p23[2] * (1-t) + p34[2] * t)
+#     p1234 = (p123[0] * (1-t) + p234[0] * t, p123[1] * (1-t) + p234[1] * t, p123[2] * (1-t) + p234[2] * t)
+#     return p1234
+
+
 
 
 class Status(Enum):
@@ -48,14 +79,12 @@ class Worm:
         self.y = 0
         self.z = 0
         self.radius = radius
-        self.quadric = gluNewQuadric()
-        gluQuadricDrawStyle(self.quadric, GLU_FLAT)
 
-    def draw(self, taille):
+    def draw(self, size, quadric):
         """Draws the worm."""
         glColor(1, 1, 0)
-        glTranslatef(taille * self.x + taille/4, self.y+self.radius, taille * self.z + taille/4)
-        gluSphere(self.quadric, self.radius, 20, 16)
+        glTranslatef(size * self.x + size/4, self.y+self.radius, size * self.z + size/4)
+        gluSphere(quadric, self.radius, 20, 16)
 
 
 class Case:
@@ -100,6 +129,7 @@ class Case:
         self.end = False
         self.trav = None
 
+
     def draw(self, size, threshold):
         """Affiche la case à l'écran."""
         w = self.x * size * 2
@@ -134,15 +164,15 @@ class Case:
         """Color a bridge between two cases."""
         if self.start or self.end or self.trav:
             if case.start or case.end or case.trav:
-                return ((n + m) / 2 for n, m in zip(self.color(), case.color()))
+                return average_colors(self.color(), case.color())
             else:
-                return case.color()
+                return average_colors((1, self.poids/HEIGHT, 0.2), case.color())
 
         else:
             if case.start or case.end or case.trav:
-                return self.color()
+                return average_colors((1, case.poids/HEIGHT, 0.2), self.color())
             else:
-                return ((n + m) / 2 for n, m in zip(self.color(), case.color()))
+                return average_colors(self.color(), case.color())
 
     def bridge_color_diagonal(self, case, opposite):
         """Color a diagonal bridge between two cases."""
@@ -236,19 +266,19 @@ class Case:
 class Grille:
     """Grille composée de cases."""
 
-    def __init__(self, taille, i, j, threshold, worm):
+    def __init__(self, size, i, j, threshold, worm):
         """Crée une grille contenant des cases.
 
-        Chaque case mesure taille, et la grille possède i x j cases.
+        Chaque case mesure size, et la grille possède i x j cases.
         """
-        self.taille = taille
+        self.size = size
         self.i = i
         self.j = j
         self.worm = worm
         self.dep = None
         self.arr = None
 
-        self.zoom = 8 * taille * max(i, j)
+        self.zoom = 12 * size * max(i, j)
         self.theta = 0
         self.phi = 90
 
@@ -359,12 +389,12 @@ class Grille:
         for ligne in range(1, self.i + 1):
             for colonne in range(1, self.j + 1):
                 if self.perspective:
-                    self.cases[ligne][colonne].draw(self.taille, self.threshold)
+                    self.cases[ligne][colonne].draw(self.size, self.threshold)
                     self.cases[ligne][colonne].draw_bridge(
-                        self.neighbors(self.cases[ligne][colonne]), self.taille
+                        self.neighbors(self.cases[ligne][colonne]), self.size
                     )
                 else:
-                    self.cases[ligne][colonne].draw_sel(self.taille)
+                    self.cases[ligne][colonne].draw_sel(self.size)
 
     def drawpath(self):
         """Draws the path on the grid, after initalization of the start and end case."""
@@ -377,12 +407,12 @@ class Grille:
         for case in path:
             case.traverser(path[-1].distance)
             sleep(0.1)
-        print(self.arr.distance)
+        i = 0
 
     def clic_case(self, x, y):
         """Cliquer sur une case."""
-        x //= self.taille
-        y //= self.taille
+        x //= self.size
+        y //= self.size
         if (
             not self.perspective
             and x <= self.i
@@ -421,26 +451,18 @@ def display():
     glLoadIdentity()
 
     if grille.perspective:
-        # x_offset = grille.taille * (grille.i + 2) / 2
-        # z_offset = grille.taille * (grille.j + 2) / 2
         gluLookAt(
             0, 0, grille.zoom,
             0, 0, 0,
             0, 1, 0,
-            # 0, grille.zoom * sin(grille.phi), grille.zoom * cos(grille.phi),
-            # 0, 0, 0,
-            # 0, cos(grille.phi), -sin(grille.phi),
         )
-        glTranslatef(0, 0, grille.taille * grille.worm.z * 2)
+        glNormal3f(cos(grille.theta/360 * pi * 2), 1, sin(grille.theta/360 * pi * 2))
+        glTranslatef(0, 0, grille.size * grille.worm.z * 2)
         glRotatef(grille.phi, 1, 0, 0)
         glRotatef(grille.theta, 0, 1, 0)
-        glTranslatef(-grille.taille * grille.worm.x * 2 - grille.taille/2,
+        glTranslatef(-grille.size * grille.worm.x * 2 - grille.size/2,
                      -grille.worm.y - grille.worm.radius,
-                     -grille.taille * grille.worm.z * 2 - grille.taille/2)
-
-        # glTranslatef(x_offset, 0, z_offset)
-        # glRotatef(grille.theta, 0, 1, 0)
-        # glTranslatef(-x_offset, 0, -z_offset)
+                     -grille.size * grille.worm.z * 2 - grille.size/2)
 
     # glPushMatrix()
     grille.draw()
@@ -450,8 +472,40 @@ def display():
         grille.worm.x = grille.dep.x
         grille.worm.y = grille.dep.poids
         grille.worm.z = grille.dep.y
-        grille.worm.draw(grille.taille*2)
+        grille.worm.draw(grille.size*2, quadric)
         # glPopMatrix()
+
+    glTranslatef(-grille.size * grille.worm.x * 2 - grille.size/2,
+                 # -grille.worm.y - grille.worm.radius,
+                 -grille.worm.radius,
+                 -grille.size * grille.worm.z * 2 - grille.size/2)
+
+    if grille.perspective:
+        case = grille.arr
+        cases_path = []
+        while case is not None:
+            cases_path.append(case)
+            case = case.prev
+        p = list(reversed(cases_path))
+
+        glBegin(GL_LINES)
+        glColor(1, 1, 1, 1)
+        bp = bezier(p, 0)
+        glVertex3f(bp[0]*grille.size*2, grille.dep.poids + 5, bp[2]*grille.size*2)
+        i = 0
+        while i <= 1:
+            bp = bezier(p, i)
+            print(bp)
+            glVertex3f(bp[0]*grille.size*2, grille.dep.poids + 5, bp[2]*grille.size*2)
+            glVertex3f(bp[0]*grille.size*2, grille.dep.poids + 5, bp[2]*grille.size*2)
+            i += 0.01
+        # bp = bezier(p, 1)
+        # glVertex3f(bp[0]*grille.size*2, 50, bp[2]*grille.size*2)
+        glEnd()
+        glTranslatef(grille.size * grille.worm.x * 2 + grille.size/2,
+                     # grille.worm.y + grille.worm.radius,
+                     -grille.worm.radius,
+                     grille.size * grille.worm.z * 2 + grille.size/2)
 
     glutSwapBuffers()
 
@@ -519,7 +573,7 @@ def keyboard(key, x, y):
     if key != b"q":
         glutPostRedisplay()
 
-    print(key, grille.theta, grille.phi, grille.zoom)
+    # print(key, grille.theta, grille.phi, grille.zoom)
 
 
 def mouse(button, state, x, y):
@@ -544,6 +598,9 @@ parser.add_argument('--width', '-W', type=int, default=38)
 parser.add_argument('--height', '-H', type=int, default=29)
 parser.add_argument('--smoothing', action=argparse.BooleanOptionalAction, default=True)
 args = parser.parse_args()
+
+quadric = gluNewQuadric()
+gluQuadricDrawStyle(quadric, GLU_FLAT)
 
 if args.input:
     with open(args.input, 'rb') as file:
