@@ -380,17 +380,12 @@ def display():
         x_offset = grille.taille * (grille.i + 2) / 2
         z_offset = grille.taille * (grille.j + 2) / 2
         gluLookAt(
-            x_offset,
-            grille.zoom * sin(grille.phi),
-            grille.zoom * cos(grille.phi) + z_offset,
-            x_offset,
-            0,
-            z_offset,
-            0,
-            cos(grille.phi),
-            -sin(grille.phi),
+            0, 0, grille.zoom,
+            0, 0, 0,
+            0, 1, 0,
         )
-        glTranslatef(x_offset, 0, z_offset)
+
+        glRotatef(grille.phi, 1, 0, 0)
         glRotatef(grille.theta, 0, 1, 0)
         glTranslatef(-x_offset, 0, -z_offset)
 
@@ -433,9 +428,9 @@ def keyboard(key, x, y):
         elif key == b"x":
             grille.zoom += 10
         elif key == b"w":
-            grille.phi = (grille.phi + 0.02 * pi) % (pi * 2)
+            grille.phi = (grille.phi + 2) % 360
         elif key == b"s":
-            grille.phi = (grille.phi - 0.02 * pi) % (pi * 2)
+            grille.phi = (grille.phi - 2) % 360
         elif key == b"a":
             grille.theta = (grille.theta - 2) % 360
         elif key == b"d":
