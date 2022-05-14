@@ -295,9 +295,8 @@ class Grille:
                 current.status = Status.VISITED
             sleep(time)
 
-    def path(self, algorithm, *args):
+    def path(self):
         """Return a list containing the path from the start case to the end case."""
-        algorithm(*args)
 
         case = self.arr
         cases_path = []
@@ -319,11 +318,12 @@ class Grille:
     def drawpath(self):
         """Draws the path on the grid, after initalization of the start and end case."""
         if args.algorithm == 'astar':
-            path = grille.path(grille.dijkstra, grille.astar)
+            grille.dijkstra(grille.astar)
         elif args.algorithm == 'dijkstra':
-            path = grille.path(grille.dijkstra, grille.smallest)
+            grille.dijkstra(grille.smallest)
         elif args.algorithm == 'breadth':
-            path = grille.path(grille.breadth_first, grille.dep)
+            grille.breadth_first(grille.dep)
+        path = self.path()
         for case in path:
             case.traverser(path[-1].distance)
             sleep(0.05)
