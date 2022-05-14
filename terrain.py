@@ -5,7 +5,7 @@ import argparse
 import threading
 from enum import Enum
 from itertools import chain, product
-from math import cos, inf, pi, pow, sin, sqrt
+from math import cos, inf, pi, pow, sin, sqrt, comb
 from random import randrange
 from time import sleep
 
@@ -25,6 +25,19 @@ from OpenGL.GLUT import (GLUT_DEPTH, GLUT_DOUBLE, GLUT_RGBA,
                          glutReshapeWindow, glutSwapBuffers)
 
 HEIGHT = 256
+
+
+def bezier(p, t):
+    x = 0
+    y = 0
+    z = 0
+    i = 0
+    while i < len(p):
+        x += p[i].x * pow(1-t, i) * pow(t, len(p)-1 - i) * comb(len(p)-1, i)
+        y += p[i].poids * pow(1-t, i) * pow(t, len(p)-1 - i) * comb(len(p)-1, i)
+        z += p[i].y * pow(1-t, i) * pow(t, len(p)-1 - i) * comb(len(p)-1, i)
+        i += 1
+    return (x, y, z)
 
 
 class Status(Enum):
@@ -297,7 +310,6 @@ class Grille:
 
     def path(self):
         """Return a list containing the path from the start case to the end case."""
-
         case = self.arr
         cases_path = []
         while case is not None:
@@ -457,9 +469,9 @@ def mouse(button, state, x, y):
     if state:
         grille.clic_case(x, y)
     if button == 3:
-        grille.zoom -= 10
+        grille.zoom -= 30
     if button == 4:
-        grille.zoom -= 10
+        grille.zoom += 30
     glutPostRedisplay()
 
 
