@@ -114,7 +114,9 @@ class Case:
         elif self.start:
             return (1, 0, 0)
         elif self.trav:
-            return (1 - self.trav, self.trav, 0)
+            return (sqrt(1 - pow(self.trav, 2)), self.trav, 0)
+        # elif self.status == Status.VISITED:
+            # return (self.poids / HEIGHT, 1, 0.6)  # nice toxic waste effect
         else:
             return (1, self.poids/HEIGHT, 0.2)
 
@@ -372,9 +374,23 @@ class Grille:
             current.status = Status.VISITED
             sleep(time)
 
-    def path(self, algorithm, *args):
+    def breadth_first(self, case, time=0.01):
+        """Fills each case's attributes according to a breadth-first algorithm."""
+        queue = [case]
+        for current in queue:
+            if current == self.arr:
+                return
+            elif current.status == Status.UNVISITED:
+                for n in self.neighbors(current):
+                    if n.status == Status.UNVISITED:
+                        n.prev = current
+                        n.distance = current.distance + current.longueur(n)
+                        queue.append(n)
+                current.status = Status.VISITED
+            sleep(time)
+
+    def path(self):
         """Return a list containing the path from the start case to the end case."""
-        algorithm(*args, 0)
 
         case = self.arr
         cases_path = []
@@ -399,15 +415,15 @@ class Grille:
     def drawpath(self):
         """Draws the path on the grid, after initalization of the start and end case."""
         if args.algorithm == 'astar':
-            path = grille.path(grille.dijkstra, grille.astar)
+            grille.dijkstra(grille.astar, 0)
         elif args.algorithm == 'dijkstra':
-            path = grille.path(grille.dijkstra, grille.smallest)
+            grille.dijkstra(grille.smallest, 0)
         elif args.algorithm == 'breadth':
-            path = grille.path(grille.breadth_first, grille.dep)
+            grille.breadth_first(grille.dep, 0)
+        path = self.path()
         for case in path:
             case.traverser(path[-1].distance)
             sleep(0.1)
-        i = 0
 
     def clic_case(self, x, y):
         """Cliquer sur une case."""
