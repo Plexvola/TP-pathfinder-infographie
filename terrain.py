@@ -255,7 +255,7 @@ class Grille:
         self.perspective = False
         self.threshold = HEIGHT * (threshold/100)
 
-        self.generate(True)
+        self.generate(args.smoothing)
 
     def generate(self, smooth):
         """Remplit la grille de cases initialisées. Peut être adoucie."""
@@ -286,9 +286,8 @@ class Grille:
 
     def smooth(self, case):
         """Flattens the case to the level of its neighbors."""
-        n = [c.poids for c in self.neighbors(case,5) if c.status != Status.NONTRAVERSABLE]
-        # return sum(n) // len(n) if n else case.poids
-        return n[len(n)//2] if n else case.poids
+        n = [c.poids for c in self.neighbors(case, 2) if c.status != Status.NONTRAVERSABLE]
+        return sorted(n)[len(n)//2] if n else case.poids
 
     def reset(self):
         """Réinitialise la grille et ses cases, sans modifier leur poids."""
@@ -315,7 +314,7 @@ class Grille:
     def neighbors(self, case, radius=1):
         """Find all traversable neighbors."""
         adjacents = filter(
-            lambda c: 0 <= c[0] <= self.i and 0 <= c[1] <= self.j and c != (case.x, case.y),
+            lambda c: 0 < c[0] <= self.i and 0 < c[1] <= self.j and c != (case.x, case.y),
             product(
                 range(case.x-radius, case.x+radius+1),
                 range(case.y-radius, case.y+radius+1),
@@ -543,6 +542,7 @@ parser.add_argument('--threshold', '-t', type=int, default=50)
 parser.add_argument('--size', '-s', type=int, default=32)
 parser.add_argument('--width', '-W', type=int, default=38)
 parser.add_argument('--height', '-H', type=int, default=29)
+parser.add_argument('--smoothing', action=argparse.BooleanOptionalAction, default=True)
 args = parser.parse_args()
 
 if args.input:
