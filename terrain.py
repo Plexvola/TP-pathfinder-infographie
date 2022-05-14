@@ -62,6 +62,37 @@ def bezier(p, t):
 
 
 
+def bezier(p, t):
+    x = 0
+    y = 0
+    z = 0
+    i = 0
+    while i < len(p):
+        x += p[i].x * pow(t, i) * pow(1-t, len(p)-1 - i) * comb(len(p)-1, i)
+        y += p[i].poids * pow(t, i) * pow(1-t, len(p)-1 - i) * comb(len(p)-1, i)
+        z += p[i].y * pow(t, i) * pow(1-t, len(p)-1 - i) * comb(len(p)-1, i)
+        i += 1
+    return (x, y, z)
+
+
+def draw_bezier(path, k=4):
+    glBegin(GL_LINES)
+    glColor(1, 1, 1, 1)
+    glVertex3f(path[0].x*grille.size + grille.size/2, path[0].poids + 15, path[0].y*grille.size + grille.size/2)
+    i = 0
+    while i < len(path):
+        t = 0.002
+        while t < 1:
+            bezier_path = bezier(path[i:i+k], t)
+            glVertex3f(bezier_path[0]*grille.size + grille.size/2, bezier_path[1] + 15, bezier_path[2]*grille.size + grille.size/2)
+            glVertex3f(bezier_path[0]*grille.size + grille.size/2, bezier_path[1] + 15, bezier_path[2]*grille.size + grille.size/2)
+            t += 0.002
+        i += k
+    glEnd()
+
+
+
+
 class Status(Enum):
     """Le statut possible de chaque case."""
 
@@ -391,7 +422,6 @@ class Grille:
 
     def path(self):
         """Return a list containing the path from the start case to the end case."""
-
         case = self.arr
         cases_path = []
         while case is not None:
@@ -496,28 +526,10 @@ def display():
                  -grille.worm.radius,
                  -grille.size * grille.worm.z * 2 - grille.size/2)
 
-    if grille.perspective:
-        case = grille.arr
-        cases_path = []
-        while case is not None:
-            cases_path.append(case)
-            case = case.prev
-        p = list(reversed(cases_path))
+    p = grille.path()
+    if p:
+        "p:", draw_bezier(p)
 
-        glBegin(GL_LINES)
-        glColor(1, 1, 1, 1)
-        bp = bezier(p, 0)
-        glVertex3f(bp[0]*grille.size*2, grille.dep.poids + 5, bp[2]*grille.size*2)
-        i = 0
-        while i <= 1:
-            bp = bezier(p, i)
-            print(bp)
-            glVertex3f(bp[0]*grille.size*2, grille.dep.poids + 5, bp[2]*grille.size*2)
-            glVertex3f(bp[0]*grille.size*2, grille.dep.poids + 5, bp[2]*grille.size*2)
-            i += 0.01
-        # bp = bezier(p, 1)
-        # glVertex3f(bp[0]*grille.size*2, 50, bp[2]*grille.size*2)
-        glEnd()
         glTranslatef(grille.size * grille.worm.x * 2 + grille.size/2,
                      # grille.worm.y + grille.worm.radius,
                      -grille.worm.radius,
@@ -560,11 +572,9 @@ def keyboard(key, x, y):
         elif key == b"-":
             grille.zoom += 20
         elif key == b"w":
-            # grille.phi = (grille.phi + 0.02 * pi) % (pi * 2)
-            grille.phi = (grille.phi - 2) % 360
-        elif key == b"s":
-            # grille.phi = (grille.phi - 0.02 * pi) % (pi * 2)
             grille.phi = (grille.phi + 2) % 360
+        elif key == b"s":
+            grille.phi = (grille.phi - 2) % 360
         elif key == b"a":
             grille.theta = (grille.theta - 2) % 360
         elif key == b"d":
