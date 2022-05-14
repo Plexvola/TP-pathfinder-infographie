@@ -62,7 +62,7 @@ class Case:
         elif self.start:
             return (1, 0, 0)
         elif self.trav:
-            return (1 - self.trav, self.trav, 0)
+            return (sqrt(1 - pow(self.trav, 2)), self.trav, 0)
         elif self.status == Status.VISITED:
             return (self.poids / HEIGHT, 1, 0.6)  # nice toxic waste effect
         else:
