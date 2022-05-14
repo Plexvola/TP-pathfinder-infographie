@@ -528,9 +528,9 @@ def mouse(button, state, x, y):
     if state:
         grille.clic_case(x, y)
     if button == 3:
-        grille.zoom -= 10
+        grille.zoom -= 30
     if button == 4:
-        grille.zoom -= 10
+        grille.zoom += 30
     glutPostRedisplay()
 
 
