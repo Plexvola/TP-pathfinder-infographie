@@ -56,7 +56,7 @@ class Case:
     def color(self):
         """Une fonction renvoyant la couleur de chaque case."""
         if self.status == Status.NONTRAVERSABLE:
-            return (self.poids / HEIGHT, self.poids / HEIGHT, self.poids / HEIGHT)
+            return (self.poids / HEIGHT, 0.45, 1)
         elif self.end:
             return (0, 1, 0)
         elif self.start:
@@ -64,9 +64,10 @@ class Case:
         elif self.trav:
             return (1 - self.trav, self.trav, 0)
         elif self.status == Status.VISITED:
-            return (self.poids / HEIGHT, 1, 0.75)  # nice toxic waste effect
+            return (self.poids / HEIGHT, 1, 0.6)  # nice toxic waste effect
         else:
-            return (self.poids / HEIGHT, 0.85, 1)
+            # return (self.poids / HEIGHT, self.poids / HEIGHT, self.poids / HEIGHT)
+            return (1, self.poids/HEIGHT, 0.2)
 
     def reset(self):
         """Une fonction qui réinitialise la case."""
