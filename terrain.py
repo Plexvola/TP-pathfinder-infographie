@@ -14,7 +14,7 @@ from OpenGL.GL import (GL_COLOR_BUFFER_BIT, GL_DEPTH_BUFFER_BIT, GL_DEPTH_TEST,
                        glClearColor, glColor, glDisable, glEnable, glEnd,
                        glLoadIdentity, glMatrixMode, glOrtho, glPopMatrix,
                        glPushMatrix, glRotatef, glTranslatef, glVertex2f,
-                       glVertex3f, glViewport)
+                       glVertex3f, glViewport, GL_LINES)
 from OpenGL.GLU import gluLookAt, gluPerspective
 from OpenGL.GLUT import (GLUT_DEPTH, GLUT_DOUBLE, GLUT_RGBA,
                          GLUT_WINDOW_HEIGHT, GLUT_WINDOW_WIDTH,
@@ -33,11 +33,29 @@ def bezier(p, t):
     z = 0
     i = 0
     while i < len(p):
-        x += p[i].x * pow(1-t, i) * pow(t, len(p)-1 - i) * comb(len(p)-1, i)
-        y += p[i].poids * pow(1-t, i) * pow(t, len(p)-1 - i) * comb(len(p)-1, i)
-        z += p[i].y * pow(1-t, i) * pow(t, len(p)-1 - i) * comb(len(p)-1, i)
+        x += p[i].x * pow(t, i) * pow(1-t, len(p)-1 - i) * comb(len(p)-1, i)
+        y += p[i].poids * pow(t, i) * pow(1-t, len(p)-1 - i) * comb(len(p)-1, i)
+        z += p[i].y * pow(t, i) * pow(1-t, len(p)-1 - i) * comb(len(p)-1, i)
         i += 1
     return (x, y, z)
+
+
+def draw_bezier(path, k=4):
+    glBegin(GL_LINES)
+    glColor(1, 1, 1, 1)
+    glVertex3f(path[0].x*grille.size + grille.size/2, path[0].poids + 15, path[0].y*grille.size + grille.size/2)
+    i = 0
+    while i < len(path):
+        t = 0.002
+        while t < 1:
+            bezier_path = bezier(path[i:i+k], t)
+            glVertex3f(bezier_path[0]*grille.size + grille.size/2, bezier_path[1] + 15, bezier_path[2]*grille.size + grille.size/2)
+            glVertex3f(bezier_path[0]*grille.size + grille.size/2, bezier_path[1] + 15, bezier_path[2]*grille.size + grille.size/2)
+            t += 0.002
+        i += k
+    glEnd()
+
+
 
 
 class Status(Enum):
@@ -188,20 +206,20 @@ class Case:
 class Grille:
     """Grille composée de cases."""
 
-    def __init__(self, taille, i, j, threshold):
+    def __init__(self, size, i, j, threshold):
         """Crée une grille contenant des cases.
 
-        Chaque case mesure taille, et la grille possède i x j cases.
+        Chaque case mesure size, et la grille possède i x j cases.
         """
-        self.taille = taille
+        self.size = size
         self.i = i
         self.j = j
         self.dep = None
         self.arr = None
 
-        self.zoom = 4 * taille * max(i, j)
+        self.zoom = 4 * size * max(i, j)
         self.theta = 0
-        self.phi = pi / 2 - pi / 10
+        self.phi = 90
 
         self.perspective = False
         self.threshold = HEIGHT * (threshold/100)
@@ -323,9 +341,9 @@ class Grille:
         for ligne in range(1, self.i + 1):
             for colonne in range(1, self.j + 1):
                 if self.perspective:
-                    self.cases[ligne][colonne].draw(self.taille, self.threshold)
+                    self.cases[ligne][colonne].draw(self.size, self.threshold)
                 else:
-                    self.cases[ligne][colonne].draw_sel(self.taille)
+                    self.cases[ligne][colonne].draw_sel(self.size)
 
     def drawpath(self):
         """Draws the path on the grid, after initalization of the start and end case."""
@@ -343,8 +361,8 @@ class Grille:
 
     def clic_case(self, x, y):
         """Cliquer sur une case."""
-        x //= self.taille
-        y //= self.taille
+        x //= self.size
+        y //= self.size
         if (
             not self.perspective
             and x <= self.i
@@ -377,8 +395,8 @@ def display():
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     glLoadIdentity()
     if grille.perspective:
-        x_offset = grille.taille * (grille.i + 2) / 2
-        z_offset = grille.taille * (grille.j + 2) / 2
+        x_offset = grille.size * (grille.i + 2) / 2
+        z_offset = grille.size * (grille.j + 2) / 2
         gluLookAt(
             0, 0, grille.zoom,
             0, 0, 0,
@@ -388,6 +406,10 @@ def display():
         glRotatef(grille.phi, 1, 0, 0)
         glRotatef(grille.theta, 0, 1, 0)
         glTranslatef(-x_offset, 0, -z_offset)
+
+        p = grille.path()
+        if p:
+            "p:", draw_bezier(p)
 
     grille.draw()
 
