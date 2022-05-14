@@ -1,20 +1,20 @@
 """Pathfinder d'un point A à un point B en OpenGL."""
-import sys
-import pickle
 import argparse
+import pickle
+import sys
 import threading
 from enum import Enum
 from itertools import chain, product
-from math import cos, inf, pi, pow, sin, sqrt, comb
+from math import comb, cos, inf, pi, pow, sin, sqrt
 from random import randrange
 from time import sleep
 
 from OpenGL.GL import (GL_COLOR_BUFFER_BIT, GL_DEPTH_BUFFER_BIT, GL_DEPTH_TEST,
-                       GL_MODELVIEW, GL_PROJECTION, GL_QUADS, glBegin, glClear,
-                       glClearColor, glColor, glDisable, glEnable, glEnd,
-                       glLoadIdentity, glMatrixMode, glOrtho, glPopMatrix,
-                       glPushMatrix, glRotatef, glTranslatef, glVertex2f,
-                       glVertex3f, glViewport, GL_LINES)
+                       GL_LINES, GL_MODELVIEW, GL_PROJECTION, GL_QUADS,
+                       glBegin, glClear, glClearColor, glColor, glDisable,
+                       glEnable, glEnd, glLoadIdentity, glMatrixMode, glOrtho,
+                       glPopMatrix, glPushMatrix, glRotatef, glTranslatef,
+                       glVertex2f, glVertex3f, glViewport)
 from OpenGL.GLU import gluLookAt, gluPerspective
 from OpenGL.GLUT import (GLUT_DEPTH, GLUT_DOUBLE, GLUT_RGBA,
                          GLUT_WINDOW_HEIGHT, GLUT_WINDOW_WIDTH,
@@ -33,9 +33,9 @@ def bezier(p, t):
     z = 0
     i = 0
     while i < len(p):
-        x += p[i].x * pow(t, i) * pow(1-t, len(p)-1 - i) * comb(len(p)-1, i)
-        y += p[i].poids * pow(t, i) * pow(1-t, len(p)-1 - i) * comb(len(p)-1, i)
-        z += p[i].y * pow(t, i) * pow(1-t, len(p)-1 - i) * comb(len(p)-1, i)
+        x += p[i].x * pow(t, i) * pow(1 - t, len(p) - 1 - i) * comb(len(p) - 1, i)
+        y += p[i].poids * pow(t, i) * pow(1 - t, len(p) - 1 - i) * comb(len(p) - 1, i)
+        z += p[i].y * pow(t, i) * pow(1 - t, len(p) - 1 - i) * comb(len(p) - 1, i)
         i += 1
     return (x, y, z)
 
@@ -43,19 +43,29 @@ def bezier(p, t):
 def draw_bezier(path, k=4):
     glBegin(GL_LINES)
     glColor(1, 1, 1, 1)
-    glVertex3f(path[0].x*grille.size + grille.size/2, path[0].poids + 15, path[0].y*grille.size + grille.size/2)
+    glVertex3f(
+        path[0].x * grille.size + grille.size / 2,
+        path[0].poids,
+        path[0].y * grille.size + grille.size / 2,
+    )
     i = 0
     while i < len(path):
         t = 0.002
         while t < 1:
-            bezier_path = bezier(path[i:i+k], t)
-            glVertex3f(bezier_path[0]*grille.size + grille.size/2, bezier_path[1] + 15, bezier_path[2]*grille.size + grille.size/2)
-            glVertex3f(bezier_path[0]*grille.size + grille.size/2, bezier_path[1] + 15, bezier_path[2]*grille.size + grille.size/2)
+            bezier_path = bezier(path[i : i + k], t)
+            glVertex3f(
+                bezier_path[0] * grille.size + grille.size / 2,
+                bezier_path[1],
+                bezier_path[2] * grille.size + grille.size / 2,
+            )
+            glVertex3f(
+                bezier_path[0] * grille.size + grille.size / 2,
+                bezier_path[1],
+                bezier_path[2] * grille.size + grille.size / 2,
+            )
             t += 0.002
         i += k
     glEnd()
-
-
 
 
 class Status(Enum):
@@ -98,7 +108,7 @@ class Case:
             return (self.poids / HEIGHT, 1, 0.6)  # nice toxic waste effect
         else:
             # return (self.poids / HEIGHT, self.poids / HEIGHT, self.poids / HEIGHT)
-            return (1, self.poids/HEIGHT, 0.2)
+            return (1, self.poids / HEIGHT, 0.2)
 
     def reset(self):
         """Une fonction qui réinitialise la case."""
@@ -222,7 +232,7 @@ class Grille:
         self.phi = 90
 
         self.perspective = False
-        self.threshold = HEIGHT * (threshold/100)
+        self.threshold = HEIGHT * (threshold / 100)
 
         self.generate(args.smoothing)
 
@@ -236,7 +246,7 @@ class Grille:
             self.cases[ligne][0] = Case(ligne, 0, inf)
             self.cases[ligne][self.j + 1] = Case(ligne, self.j + 1, inf)
             for colonne in range(1, self.j + 1):
-                self.cases[ligne][colonne] = Case(ligne, colonne, randrange(HEIGHT+1))
+                self.cases[ligne][colonne] = Case(ligne, colonne, randrange(HEIGHT + 1))
 
         weights = [[[] for _ in range(self.j + 2)] for _ in range(self.i + 2)]
 
@@ -255,8 +265,12 @@ class Grille:
 
     def smooth(self, case):
         """Flattens the case to the level of its neighbors."""
-        n = [c.poids for c in self.neighbors(case, 2) if c.status != Status.NONTRAVERSABLE]
-        return sorted(n)[len(n)//2] if n else case.poids
+        n = [
+            c.poids
+            for c in self.neighbors(case, 2)
+            if c.status != Status.NONTRAVERSABLE
+        ]
+        return sorted(n)[len(n) // 2] if n else case.poids
 
     def reset(self):
         """Réinitialise la grille et ses cases, sans modifier leur poids."""
@@ -283,17 +297,16 @@ class Grille:
     def neighbors(self, case, radius=1):
         """Find all traversable neighbors."""
         adjacents = filter(
-            lambda c: 0 < c[0] <= self.i and 0 < c[1] <= self.j and c != (case.x, case.y),
+            lambda c: 0 < c[0] <= self.i
+            and 0 < c[1] <= self.j
+            and c != (case.x, case.y),
             product(
-                range(case.x-radius, case.x+radius+1),
-                range(case.y-radius, case.y+radius+1),
-            )
+                range(case.x - radius, case.x + radius + 1),
+                range(case.y - radius, case.y + radius + 1),
+            ),
         )
 
-        cases_adj = [
-            self.cases[x][y]
-            for x, y in adjacents
-        ]
+        cases_adj = [self.cases[x][y] for x, y in adjacents]
 
         return cases_adj
 
@@ -347,11 +360,11 @@ class Grille:
 
     def drawpath(self):
         """Draws the path on the grid, after initalization of the start and end case."""
-        if args.algorithm == 'astar':
+        if args.algorithm == "astar":
             grille.dijkstra(grille.astar)
-        elif args.algorithm == 'dijkstra':
+        elif args.algorithm == "dijkstra":
             grille.dijkstra(grille.smallest)
-        elif args.algorithm == 'breadth':
+        elif args.algorithm == "breadth":
             grille.breadth_first(grille.dep)
         path = self.path()
         for case in path:
@@ -398,9 +411,15 @@ def display():
         x_offset = grille.size * (grille.i + 2) / 2
         z_offset = grille.size * (grille.j + 2) / 2
         gluLookAt(
-            0, 0, grille.zoom,
-            0, 0, 0,
-            0, 1, 0,
+            0,
+            0,
+            grille.zoom,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
         )
 
         glRotatef(grille.phi, 1, 0, 0)
@@ -409,7 +428,7 @@ def display():
 
         p = grille.path()
         if p:
-            "p:", draw_bezier(p)
+            draw_bezier(p)
 
     grille.draw()
 
@@ -460,15 +479,15 @@ def keyboard(key, x, y):
 
     else:
         if key == b"1":
-            grille.threshold -= HEIGHT*0.01
+            grille.threshold -= HEIGHT * 0.01
             grille.generate(True)
         elif key == b"2":
-            grille.threshold += HEIGHT*0.01
+            grille.threshold += HEIGHT * 0.01
             grille.generate(True)
         elif key == b"r":
             grille.generate(True)
         elif key == b"S":
-            with open(args.output, 'wb') as file:
+            with open(args.output, "wb") as file:
                 pickle.dump(grille, file)
 
     if key == b"q":
@@ -492,19 +511,19 @@ def mouse(button, state, x, y):
     glutPostRedisplay()
 
 
-parser = argparse.ArgumentParser(description='Pathfinder codé entièrement en OpenGL.')
-parser.add_argument('--algorithm', '-a', type=str, default='astar')
-parser.add_argument('--output', '-o', type=str, default='terrain.pickle')
-parser.add_argument('--input', '-i', type=str)
-parser.add_argument('--threshold', '-t', type=int, default=50)
-parser.add_argument('--size', '-s', type=int, default=32)
-parser.add_argument('--width', '-W', type=int, default=38)
-parser.add_argument('--height', '-H', type=int, default=29)
-parser.add_argument('--smoothing', action=argparse.BooleanOptionalAction, default=True)
+parser = argparse.ArgumentParser(description="Pathfinder codé entièrement en OpenGL.")
+parser.add_argument("--algorithm", "-a", type=str, default="astar")
+parser.add_argument("--output", "-o", type=str, default="terrain.pickle")
+parser.add_argument("--input", "-i", type=str)
+parser.add_argument("--threshold", "-t", type=int, default=50)
+parser.add_argument("--size", "-s", type=int, default=32)
+parser.add_argument("--width", "-W", type=int, default=38)
+parser.add_argument("--height", "-H", type=int, default=29)
+parser.add_argument("--smoothing", action=argparse.BooleanOptionalAction, default=True)
 args = parser.parse_args()
 
 if args.input:
-    with open(args.input, 'rb') as file:
+    with open(args.input, "rb") as file:
         grille = pickle.load(file)
 else:
     grille = Grille(args.size, args.width, args.height, args.threshold)
