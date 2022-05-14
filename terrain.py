@@ -1,5 +1,7 @@
 """Pathfinder d'un point A à un point B en OpenGL."""
 import sys
+import pickle
+import argparse
 import threading
 from enum import Enum
 from itertools import chain, product
@@ -77,7 +79,7 @@ class Case:
     def color(self):
         """Une fonction renvoyant la couleur de chaque case."""
         if self.status == Status.NONTRAVERSABLE:
-            return (0.2, 0.2, 0.2)
+            return (self.poids / HEIGHT, self.poids / HEIGHT, self.poids / HEIGHT)
         elif self.end:
             return (0, 1, 0)
         elif self.start:
@@ -89,9 +91,7 @@ class Case:
 
     def reset(self):
         """Une fonction qui réinitialise la case."""
-        if self.poids == inf:
-            self.status = Status.NONTRAVERSABLE
-        else:
+        if self.status == Status.VISITED:
             self.status = Status.UNVISITED
 
         self.distance = inf
@@ -236,7 +236,7 @@ class Case:
 class Grille:
     """Grille composée de cases."""
 
-    def __init__(self, taille, i, j, worm):
+    def __init__(self, taille, i, j, threshold, worm):
         """Crée une grille contenant des cases.
 
         Chaque case mesure taille, et la grille possède i x j cases.
@@ -248,12 +248,12 @@ class Grille:
         self.dep = None
         self.arr = None
 
-        self.zoom = 6 * taille * max(i, j)
+        self.zoom = 8 * taille * max(i, j)
         self.theta = 0
         self.phi = 90
 
         self.perspective = False
-        self.threshold = 120
+        self.threshold = HEIGHT * (threshold/100)
 
         self.generate(True)
 
@@ -282,13 +282,13 @@ class Grille:
 
         for case in chain(*self.cases):
             if case.poids < self.threshold:
-                case.poids = inf
                 case.status = Status.NONTRAVERSABLE
 
     def smooth(self, case):
         """Flattens the case to the level of its neighbors."""
-        n = [c.poids for c in self.neighbors(case)]
-        return sum(n) // len(n) if n else case.poids
+        n = [c.poids for c in self.neighbors(case,5) if c.status != Status.NONTRAVERSABLE]
+        # return sum(n) // len(n) if n else case.poids
+        return n[len(n)//2] if n else case.poids
 
     def reset(self):
         """Réinitialise la grille et ses cases, sans modifier leur poids."""
@@ -312,17 +312,19 @@ class Grille:
             key=lambda c: c.distance + c.longueur(self.arr),
         )
 
-    def neighbors(self, case):
+    def neighbors(self, case, radius=1):
         """Find all traversable neighbors."""
         adjacents = filter(
-            lambda c: c != (case.x, case.y),
-            product([case.x - 1, case.x, case.x + 1], [case.y - 1, case.y, case.y + 1]),
+            lambda c: 0 <= c[0] <= self.i and 0 <= c[1] <= self.j and c != (case.x, case.y),
+            product(
+                range(case.x-radius, case.x+radius+1),
+                range(case.y-radius, case.y+radius+1),
+            )
         )
 
         cases_adj = [
             self.cases[x][y]
             for x, y in adjacents
-            if self.cases[x][y].status != Status.NONTRAVERSABLE
         ]
 
         return cases_adj
@@ -367,7 +369,12 @@ class Grille:
 
     def drawpath(self):
         """Draws the path on the grid, after initalization of the start and end case."""
-        path = grille.path(grille.dijkstra, grille.astar)
+        if args.algorithm == 'astar':
+            path = grille.path(grille.dijkstra, grille.astar)
+        elif args.algorithm == 'dijkstra':
+            path = grille.path(grille.dijkstra, grille.smallest)
+        elif args.algorithm == 'breadth':
+            path = grille.path(grille.breadth_first, grille.dep)
         for case in path:
             case.traverser(path[-1].distance)
             sleep(0.1)
@@ -384,15 +391,13 @@ class Grille:
             and self.cases[x][y].poids != inf
         ):
             if not self.dep:
-                self.dep = self.cases[x][y]
-                self.dep.depart()
+                if self.cases[x][y].status != Status.NONTRAVERSABLE:
+                    self.dep = self.cases[x][y]
+                    self.dep.depart()
             elif not self.arr:
-                self.arr = self.cases[x][y]
-                self.arr.arrivee()
-
-
-worm = Worm(20)
-grille = Grille(32, 38, 29, worm)
+                if self.cases[x][y].status != Status.NONTRAVERSABLE:
+                    self.arr = self.cases[x][y]
+                    self.arr.arrivee()
 
 
 def init():
@@ -496,6 +501,19 @@ def keyboard(key, x, y):
         elif key == b"d":
             grille.theta = (grille.theta + 2) % 360
 
+    else:
+        if key == b"1":
+            grille.threshold -= HEIGHT*0.01
+            grille.generate(True)
+        elif key == b"2":
+            grille.threshold += HEIGHT*0.01
+            grille.generate(True)
+        elif key == b"r":
+            grille.generate(True)
+        elif key == b"S":
+            with open(args.output, 'wb') as file:
+                pickle.dump(grille, file)
+
     if key == b"q":
         glutDestroyWindow(glutGetWindow())
 
@@ -516,6 +534,23 @@ def mouse(button, state, x, y):
         grille.zoom -= 10
     glutPostRedisplay()
 
+
+parser = argparse.ArgumentParser(description='Pathfinder codé entièrement en OpenGL.')
+parser.add_argument('--algorithm', '-a', type=str, default='astar')
+parser.add_argument('--output', '-o', type=str, default='terrain.pickle')
+parser.add_argument('--input', '-i', type=str)
+parser.add_argument('--threshold', '-t', type=int, default=50)
+parser.add_argument('--size', '-s', type=int, default=32)
+parser.add_argument('--width', '-W', type=int, default=38)
+parser.add_argument('--height', '-H', type=int, default=29)
+args = parser.parse_args()
+
+if args.input:
+    with open(args.input, 'rb') as file:
+        grille = pickle.load(file)
+else:
+    worm = Worm(20)
+    grille = Grille(args.size, args.width, args.height, args.threshold, worm)
 
 if __name__ == "__main__":
     if "d" not in sys.argv:
