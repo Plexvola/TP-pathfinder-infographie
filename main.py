@@ -134,7 +134,6 @@ def keyboard(key, x, y):
             draw = threading.Thread(target=main_grid.drawpath, daemon=True,
                                     args=(args.algorithm,))
             draw.start()
-
         else:
             main_grid.reset()
 
