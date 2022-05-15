@@ -42,9 +42,9 @@ def draw_bezier(path, k=4):
     glBegin(GL_LINES)
     glColor(1, 1, 1, 1)
     glVertex3f(
-        path[0].x * maingrid.size + maingrid.size / 2,
+        path[0].x * main_grid.size + main_grid.size / 2,
         path[0].cost,
-        path[0].y * maingrid.size + maingrid.size / 2,
+        path[0].y * main_grid.size + main_grid.size / 2,
     )
     i = 0
     while i < len(path):
@@ -52,14 +52,14 @@ def draw_bezier(path, k=4):
         while t < 1:
             bezier_path = bezier(path[i : i + k], t)
             glVertex3f(
-                bezier_path[0] * maingrid.size + maingrid.size / 2,
+                bezier_path[0] * main_grid.size + main_grid.size / 2,
                 bezier_path[1],
-                bezier_path[2] * maingrid.size + maingrid.size / 2,
+                bezier_path[2] * main_grid.size + main_grid.size / 2,
             )
             glVertex3f(
-                bezier_path[0] * maingrid.size + maingrid.size / 2,
+                bezier_path[0] * main_grid.size + main_grid.size / 2,
                 bezier_path[1],
-                bezier_path[2] * maingrid.size + maingrid.size / 2,
+                bezier_path[2] * main_grid.size + main_grid.size / 2,
             )
             t += 0.002
         i += k
@@ -68,8 +68,8 @@ def draw_bezier(path, k=4):
 
 def init():
     """Initialize the OpenGL window."""
-    global maingrid
-    if maingrid.perspective:
+    global main_grid
+    if main_grid.perspective:
         glEnable(GL_DEPTH_TEST)
     else:
         glDisable(GL_DEPTH_TEST)
@@ -78,16 +78,16 @@ def init():
 
 def display():
     """Display the OpenGL window."""
-    global maingrid
+    global main_grid
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     glLoadIdentity()
-    if maingrid.perspective:
-        x_offset = maingrid.size * (maingrid.width + 2) / 2
-        z_offset = maingrid.size * (maingrid.height + 2) / 2
+    if main_grid.perspective:
+        x_offset = main_grid.size * (main_grid.width + 2) / 2
+        z_offset = main_grid.size * (main_grid.height + 2) / 2
         gluLookAt(
             0,
             0,
-            maingrid.zoom,
+            main_grid.zoom,
             0,
             0,
             0,
@@ -96,26 +96,26 @@ def display():
             0,
         )
 
-        glRotatef(maingrid.phi, 1, 0, 0)
-        glRotatef(maingrid.theta, 0, 1, 0)
+        glRotatef(main_grid.phi, 1, 0, 0)
+        glRotatef(main_grid.theta, 0, 1, 0)
         glTranslatef(-x_offset, 0, -z_offset)
 
         # p = maingrid.path()
         # if p:
         # draw_bezier(p)
 
-    maingrid.draw()
+    main_grid.draw()
 
     glutSwapBuffers()
 
 
 def reshape(width, height):
     """Reshape the window and moves the objects inside."""
-    global maingrid
+    global main_grid
     glViewport(0, 0, width, height)
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
-    if maingrid.perspective:
+    if main_grid.perspective:
         gluPerspective(16, width / height, 200, 10000)
     else:
         glOrtho(0, width, height, 0, 20, 0)
@@ -124,46 +124,46 @@ def reshape(width, height):
 
 def keyboard(key, x, y):
     """React upon keyboard input."""
-    global maingrid
+    global main_grid
 
     if key == b"\r":
-        maingrid.perspective = not maingrid.perspective
+        main_grid.perspective = not main_grid.perspective
         init()
         reshape(glutGet(GLUT_WINDOW_WIDTH), glutGet(GLUT_WINDOW_HEIGHT))
-        if maingrid.perspective:
-            draw = threading.Thread(target=maingrid.drawpath, daemon=True,
+        if main_grid.perspective:
+            draw = threading.Thread(target=main_grid.drawpath, daemon=True,
                                     args=(args.algorithm,))
             draw.start()
 
         else:
-            maingrid.reset()
+            main_grid.reset()
 
-    if maingrid.perspective:
+    if main_grid.perspective:
         if key == b"z":
-            maingrid.zoom -= 10
+            main_grid.zoom -= 10
         elif key == b"x":
-            maingrid.zoom += 10
+            main_grid.zoom += 10
         elif key == b"w":
-            maingrid.phi = (maingrid.phi + 2) % 360
+            main_grid.phi = (main_grid.phi + 2) % 360
         elif key == b"s":
-            maingrid.phi = (maingrid.phi - 2) % 360
+            main_grid.phi = (main_grid.phi - 2) % 360
         elif key == b"a":
-            maingrid.theta = (maingrid.theta - 2) % 360
+            main_grid.theta = (main_grid.theta - 2) % 360
         elif key == b"d":
-            maingrid.theta = (maingrid.theta + 2) % 360
+            main_grid.theta = (main_grid.theta + 2) % 360
 
     else:
         if key == b"1":
-            maingrid.threshold -= HEIGHT * 0.01
-            maingrid.generate(args.smoothing)
+            main_grid.threshold -= HEIGHT * 0.01
+            main_grid.generate(args.smoothing)
         elif key == b"2":
-            maingrid.threshold += HEIGHT * 0.01
-            maingrid.generate(args.smoothing)
+            main_grid.threshold += HEIGHT * 0.01
+            main_grid.generate(args.smoothing)
         elif key == b"r":
-            maingrid.generate(args.smoothing)
+            main_grid.generate(args.smoothing)
         elif key == b"S":
             with open(args.output, "wb") as file:
-                pickle.dump(maingrid, file)
+                pickle.dump(main_grid, file)
 
     if key == b"q":
         glutDestroyWindow(glutGetWindow())
@@ -171,18 +171,18 @@ def keyboard(key, x, y):
     if key != b"q":
         glutPostRedisplay()
 
-    print(key, maingrid.theta, maingrid.phi, maingrid.zoom)
+    print(key, main_grid.theta, main_grid.phi, main_grid.zoom)
 
 
 def mouse(button, state, x, y):
     """React upon mouse clicks."""
-    global maingrid
+    global main_grid
     if state:
-        maingrid.clic_tile(x, y)
+        main_grid.clic_tile(x, y)
     if button == 3:
-        maingrid.zoom -= 30
+        main_grid.zoom -= 30
     if button == 4:
-        maingrid.zoom += 30
+        main_grid.zoom += 30
     glutPostRedisplay()
 
 
@@ -199,10 +199,10 @@ args = parser.parse_args()
 
 if args.input:
     with open(args.input, "rb") as file:
-        maingrid = pickle.load(file)
+        main_grid = pickle.load(file)
 else:
-    maingrid = Grid(args.size, args.width, args.height, args.threshold)
-    maingrid.generate(args.smoothing)
+    main_grid = Grid(args.size, args.width, args.height, args.threshold)
+    main_grid.generate(args.smoothing)
 
 
 if __name__ == "__main__":
