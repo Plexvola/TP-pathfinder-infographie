@@ -52,9 +52,9 @@ def draw_bezier(path, k=4):
     glBegin(GL_LINES)
     glColor(1, 1, 1, 1)
     glVertex3f(
-        path[0].x * grid.size * 2 + grid.size / 2,
+        path[0].x * main_grid.size * 2 + main_grid.size / 2,
         path[0].cost,
-        path[0].y * grid.size * 2 + grid.size / 2,
+        path[0].y * main_grid.size * 2 + main_grid.size / 2,
     )
     i = 0
     while i < len(path):
@@ -62,14 +62,14 @@ def draw_bezier(path, k=4):
         while t < 1:
             bezier_path = bezier(path[i : i + k], t)
             glVertex3f(
-                bezier_path[0] * grid.size * 2 + grid.size / 2,
+                bezier_path[0] * main_grid.size * 2 + main_grid.size / 2,
                 bezier_path[1],
-                bezier_path[2] * grid.size * 2 + grid.size / 2,
+                bezier_path[2] * main_grid.size * 2 + main_grid.size / 2,
             )
             glVertex3f(
-                bezier_path[0] * grid.size * 2 + grid.size / 2,
+                bezier_path[0] * main_grid.size * 2 + main_grid.size / 2,
                 bezier_path[1],
-                bezier_path[2] * grid.size * 2 + grid.size / 2,
+                bezier_path[2] * main_grid.size * 2 + main_grid.size / 2,
             )
             t += 0.002
         i += k
@@ -111,9 +111,9 @@ class Worm:
             i += k
 
 def init():
-    """Initialise la fenêtre OpenGL."""
-    global grid
-    if grid.perspective:
+    """Initialize the OpenGL window."""
+    global main_grid
+    if main_grid.perspective:
         glEnable(GL_DEPTH_TEST)
         glEnable(GL_LIGHTING)
         glEnable(GL_LIGHT0)
@@ -126,16 +126,15 @@ def init():
 
 
 def display():
-    """Affiche la fenêtre OpenGL."""
-    global grid
+    """Display the OpenGL window."""
+    global main_grid
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     glLoadIdentity()
-
-    if grid.perspective:
+    if main_grid.perspective:
         gluLookAt(
             0,
             0,
-            grid.zoom,
+            main_grid.zoom,
             0,
             0,
             0,
@@ -144,45 +143,44 @@ def display():
             0,
         )
         glNormal3f(
-            cos(grid.theta / 360 * pi * 2), 1, sin(grid.theta / 360 * pi * 2)
+            cos(main_grid.theta / 360 * pi * 2), 1, sin(main_grid.theta / 360 * pi * 2)
         )
-        glTranslatef(0, 0, grid.size * grid.worm.z * 2)
-        glRotatef(grid.phi, 1, 0, 0)
-        glRotatef(grid.theta, 0, 1, 0)
+        glTranslatef(0, 0, main_grid.size * main_grid.worm.z * 2)
+        glRotatef(main_grid.phi, 1, 0, 0)
+        glRotatef(main_grid.theta, 0, 1, 0)
         glTranslatef(
-            -grid.size * grid.worm.x * 2 - grid.size / 2,
-            -grid.worm.y - grid.worm.radius,
-            -grid.size * grid.worm.z * 2 - grid.size / 2,
+            -main_grid.size * main_grid.worm.x * 2 - main_grid.size / 2,
+            -main_grid.worm.y - main_grid.worm.radius,
+            -main_grid.size * main_grid.worm.z * 2 - main_grid.size / 2,
         )
 
     # glPushMatrix()
-    grid.draw()
+    main_grid.draw()
     # glPopMatrix()
-    if grid.perspective and grid.start:
+    if main_grid.perspective and main_grid.start:
         # glPushMatrix()
         # grid.worm.x = grid.dep.x
         # grid.worm.y = grid.dep.cost
         # grid.worm.z = grid.dep.y
-        grid.worm.draw(grid.size * 2, quadric)
+        main_grid.worm.draw(main_grid.size * 2, quadric)
         # glPopMatrix()
 
     glTranslatef(
-        -grid.size * grid.worm.x * 2 - grid.size / 2,
-        -grid.worm.y - grid.worm.radius,
+        -main_grid.size * main_grid.worm.x * 2 - main_grid.size / 2,
+        -main_grid.worm.y - main_grid.worm.radius,
         # -grid.worm.radius,
-        -grid.size * grid.worm.z * 2 - grid.size / 2,
+        -main_grid.size * main_grid.worm.z * 2 - main_grid.size / 2,
     )
-
     glutSwapBuffers()
 
 
 def reshape(width, height):
-    """Reforme la fenêtre et bouge les formes dedans."""
-    global grid
+    """Reshape the window and moves the objects inside."""
+    global main_grid
     glViewport(0, 0, width, height)
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
-    if grid.perspective:
+    if main_grid.perspective:
         gluPerspective(16, width / height, 200, 20000)
     else:
         glOrtho(0, width, height, 0, 20, 0)
@@ -190,47 +188,47 @@ def reshape(width, height):
 
 
 def keyboard(key, x, y):
-    """Réagit aux entrées clavier."""
-    global grid
+    """React upon keyboard input."""
+    global main_grid
 
     if key == b"\r":
-        grid.perspective = not grid.perspective
+        main_grid.perspective = not main_grid.perspective
         init()
         reshape(glutGet(GLUT_WINDOW_WIDTH), glutGet(GLUT_WINDOW_HEIGHT))
-        if grid.perspective:
-            draw = threading.Thread(target=grid.drawpath, daemon=True,
+        if main_grid.perspective:
+            draw = threading.Thread(target=main_grid.drawpath, daemon=True,
                                     args=(args.algorithm,))
             draw.start()
             pass
         else:
-            grid.reset()
+            main_grid.reset()
 
-    if grid.perspective:
-        if key == b"+":
-            grid.zoom -= 20
-        elif key == b"-":
-            grid.zoom += 20
+    if main_grid.perspective:
+        if key == b"z":
+            main_grid.zoom -= 10
+        elif key == b"x":
+            main_grid.zoom += 10
         elif key == b"w":
-            grid.phi = (grid.phi + 2) % 360
+            main_grid.phi = (main_grid.phi + 2) % 360
         elif key == b"s":
-            grid.phi = (grid.phi - 2) % 360
+            main_grid.phi = (main_grid.phi - 2) % 360
         elif key == b"a":
-            grid.theta = (grid.theta - 2) % 360
+            main_grid.theta = (main_grid.theta - 2) % 360
         elif key == b"d":
-            grid.theta = (grid.theta + 2) % 360
+            main_grid.theta = (main_grid.theta + 2) % 360
 
     else:
         if key == b"1":
-            grid.threshold -= HEIGHT * 0.01
-            grid.generate(True)
+            main_grid.threshold -= HEIGHT * 0.01
+            main_grid.generate(args.smoothing)
         elif key == b"2":
-            grid.threshold += HEIGHT * 0.01
-            grid.generate(True)
+            main_grid.threshold += HEIGHT * 0.01
+            main_grid.generate(args.smoothing)
         elif key == b"r":
-            grid.generate(True)
+            main_grid.generate(args.smoothing)
         elif key == b"S":
             with open(args.output, "wb") as file:
-                pickle.dump(grid, file)
+                pickle.dump(main_grid, file)
 
     if key == b"q":
         glutDestroyWindow(glutGetWindow())
@@ -238,18 +236,18 @@ def keyboard(key, x, y):
     if key != b"q":
         glutPostRedisplay()
 
-    # print(key, grid.theta, grid.phi, grid.zoom)
+    print(key, main_grid.theta, main_grid.phi, main_grid.zoom)
 
 
 def mouse(button, state, x, y):
-    """Réagit au clic de souris."""
-    global grid
+    """React upon mouse clicks."""
+    global main_grid
     if state:
-        grid.clic_tile(x, y)
+        main_grid.clic_tile(x, y)
     if button == 3:
-        grid.zoom -= 30
+        main_grid.zoom -= 30
     if button == 4:
-        grid.zoom += 30
+        main_grid.zoom += 30
     glutPostRedisplay()
 
 
@@ -261,7 +259,7 @@ parser.add_argument("--threshold", "-t", type=int, default=50)
 parser.add_argument("--size", "-s", type=int, default=32)
 parser.add_argument("--width", "-W", type=int, default=38)
 parser.add_argument("--height", "-H", type=int, default=29)
-parser.add_argument("--smoothing", action=argparse.BooleanOptionalAction, default=True)
+parser.add_argument("--smoothing", "-S", type=int, default=2)
 args = parser.parse_args()
 
 quadric = gluNewQuadric()
@@ -269,11 +267,11 @@ gluQuadricDrawStyle(quadric, GLU_FLAT)
 
 if args.input:
     with open(args.input, "rb") as file:
-        grid = pickle.load(file)
+        main_grid = pickle.load(file)
 else:
     worm = Worm(20)
-    grid = Grid(args.size, args.width, args.height, args.threshold, worm)
-    grid.generate(True)
+    main_grid = Grid(args.size, args.width, args.height, args.threshold, worm)
+    main_grid.generate(args.smoothing)
 
 if __name__ == "__main__":
     if "d" not in sys.argv:

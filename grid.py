@@ -29,7 +29,7 @@ class Grid:
         self.perspective = False
         self.threshold = HEIGHT * (threshold / 100)
 
-    def generate(self, smooth):
+    def generate(self, smooth_level=2):
         """Generate each tile of the grid. Tiles can be smoothed."""
         self.tiles = [[[] for _ in range(self.height + 2)] for _ in range(self.width + 2)]
         self.tiles[0] = [Tile(0, x, inf) for x in range(self.height + 2)]
@@ -43,10 +43,10 @@ class Grid:
 
         weights = [[[] for _ in range(self.height + 2)] for _ in range(self.width + 2)]
 
-        if smooth:
+        if smooth_level:
             for tile in chain(*self.tiles):
                 if tile.status != Status.NONTRAVERSABLE:
-                    weights[tile.x][tile.y] = self.smooth(tile)
+                    weights[tile.x][tile.y] = self.smooth(tile, smooth_level)
 
             for tile in chain(*self.tiles):
                 if tile.status != Status.NONTRAVERSABLE:
@@ -56,11 +56,11 @@ class Grid:
             if tile.cost < self.threshold:
                 tile.status = Status.NONTRAVERSABLE
 
-    def smooth(self, tile):
+    def smooth(self, tile, smooth_level):
         """Flattens the tile to the level of its neighbors."""
         n = [
             c.cost
-            for c in self.neighbors(tile, 2)
+            for c in self.neighbors(tile, smooth_level)
             if c.status != Status.NONTRAVERSABLE
         ]
         return sorted(n)[len(n) // 2] if n else tile.cost
