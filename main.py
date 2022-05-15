@@ -156,21 +156,13 @@ def display():
             -main_grid.size * main_grid.worm.z * 2 - main_grid.size / 2,
         )
 
-    # glPushMatrix()
     main_grid.draw()
-    # glPopMatrix()
     if main_grid.perspective and main_grid.start:
-        # glPushMatrix()
-        # grid.worm.x = grid.dep.x
-        # grid.worm.y = grid.dep.cost
-        # grid.worm.z = grid.dep.y
         main_grid.worm.draw(main_grid.size * 2, quadric)
-        # glPopMatrix()
 
     glTranslatef(
         -main_grid.size * main_grid.worm.x * 2 - main_grid.size / 2,
         -main_grid.worm.y - main_grid.worm.radius,
-        # -grid.worm.radius,
         -main_grid.size * main_grid.worm.z * 2 - main_grid.size / 2,
     )
     glutSwapBuffers()
@@ -201,7 +193,6 @@ def keyboard(key, x, y):
             draw = threading.Thread(target=main_grid.drawpath, daemon=True,
                                     args=(args.algorithm,))
             draw.start()
-            pass
         else:
             main_grid.reset()
 
