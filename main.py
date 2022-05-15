@@ -155,12 +155,12 @@ def keyboard(key, x, y):
     else:
         if key == b"1":
             maingrid.threshold -= HEIGHT * 0.01
-            maingrid.generate(True)
+            maingrid.generate(args.smoothing)
         elif key == b"2":
             maingrid.threshold += HEIGHT * 0.01
-            maingrid.generate(True)
+            maingrid.generate(args.smoothing)
         elif key == b"r":
-            maingrid.generate(True)
+            maingrid.generate(args.smoothing)
         elif key == b"S":
             with open(args.output, "wb") as file:
                 pickle.dump(maingrid, file)
@@ -194,7 +194,7 @@ parser.add_argument("--threshold", "-t", type=int, default=50)
 parser.add_argument("--size", "-s", type=int, default=32)
 parser.add_argument("--width", "-W", type=int, default=38)
 parser.add_argument("--height", "-H", type=int, default=29)
-parser.add_argument("--smoothing", action=argparse.BooleanOptionalAction, default=True)
+parser.add_argument("--smoothing", "-S", type=int, default=2)
 args = parser.parse_args()
 
 if args.input:
