@@ -30,12 +30,12 @@ from OpenGL.GLUT import (GLUT_DEPTH, GLUT_DOUBLE, GLUT_RGBA,
                          glutMouseFunc, glutPostRedisplay, glutReshapeFunc,
                          glutReshapeWindow, glutSwapBuffers)
 
-HEIGHT = 256
-
+from misc import HEIGHT
 from grid import Grid
 
 
 def bezier(p, t):
+    """Return the point at length t from the Bézier curve of control tiles p."""
     x = 0
     y = 0
     z = 0
@@ -48,7 +48,9 @@ def bezier(p, t):
     return (x, y, z)
 
 
+
 def draw_bezier(path, k=4):
+    """Draw in OpenGL the Bézier curves with k control points from the points path."""
     glBegin(GL_LINES)
     glColor(1, 1, 1, 1)
     glVertex3f(
