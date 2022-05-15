@@ -9,18 +9,19 @@ from math import comb, cos, inf, pi, pow, sin, sqrt
 from random import randrange
 from time import sleep
 
-from OpenGL.GL import (GL_COLOR_BUFFER_BIT, GL_DEPTH_BUFFER_BIT, GL_DEPTH_TEST,
-                       GL_MODELVIEW, GL_PROJECTION, GL_QUADS, GL_TRIANGLES,
-                       glBegin, glClear, glClearColor, glColor, glDisable,
-                       glEnable, glEnd, glLoadIdentity, glMatrixMode, glOrtho,
-                       glPopMatrix, glPushMatrix, glRotatef, glTranslatef,
-                       glVertex2f, glVertex3f, glViewport, GL_LIGHTING, GL_LIGHT0,
-                       GL_COLOR_MATERIAL, GL_FLAT, glLight, GL_POSITION, glShadeModel,
-                       glNormal3f, glMaterial, GL_FRONT, GL_BACK, GL_FRONT_AND_BACK,
-                       GL_SHININESS, GL_AMBIENT, GL_DIFFUSE, GL_AMBIENT_AND_DIFFUSE,
-                       GL_LINES)
-from OpenGL.GLU import (GLU_SMOOTH, gluLookAt, gluNewQuadric, gluPerspective,
-                        gluQuadricDrawStyle, gluSphere, GLU_FLAT)
+from OpenGL.GL import (GL_AMBIENT, GL_AMBIENT_AND_DIFFUSE, GL_BACK,
+                       GL_COLOR_BUFFER_BIT, GL_COLOR_MATERIAL,
+                       GL_DEPTH_BUFFER_BIT, GL_DEPTH_TEST, GL_DIFFUSE, GL_FLAT,
+                       GL_FRONT, GL_FRONT_AND_BACK, GL_LIGHT0, GL_LIGHTING,
+                       GL_LINES, GL_MODELVIEW, GL_POSITION, GL_PROJECTION,
+                       GL_QUADS, GL_SHININESS, GL_TRIANGLES, glBegin, glClear,
+                       glClearColor, glColor, glDisable, glEnable, glEnd,
+                       glLight, glLoadIdentity, glMaterial, glMatrixMode,
+                       glNormal3f, glOrtho, glPopMatrix, glPushMatrix,
+                       glRotatef, glShadeModel, glTranslatef, glVertex2f,
+                       glVertex3f, glViewport)
+from OpenGL.GLU import (GLU_FLAT, GLU_SMOOTH, gluLookAt, gluNewQuadric,
+                        gluPerspective, gluQuadricDrawStyle, gluSphere)
 from OpenGL.GLUT import (GLUT_DEPTH, GLUT_DOUBLE, GLUT_RGBA,
                          GLUT_WINDOW_HEIGHT, GLUT_WINDOW_WIDTH,
                          glutCreateWindow, glutDestroyWindow, glutDisplayFunc,
@@ -31,35 +32,14 @@ from OpenGL.GLUT import (GLUT_DEPTH, GLUT_DOUBLE, GLUT_RGBA,
 
 HEIGHT = 256
 
+
 def average_colors(col1, col2):
     """Averages two colors in a sane way."""
-    return (sqrt((pow(col1[0], 2) + pow(col2[0], 2))/2),
-            sqrt((pow(col1[1], 2) + pow(col2[1], 2))/2),
-            sqrt((pow(col1[2], 2) + pow(col2[2], 2))/2))
-
-
-def bezier(p, t):
-    x = 0
-    y = 0
-    z = 0
-    i = 0
-    while i < len(p):
-        x += p[i].x * pow(1-t, i) * pow(t, len(p)-1 - i) * comb(len(p)-1, i)
-        y += p[i].poids * pow(1-t, i) * pow(t, len(p)-1 - i) * comb(len(p)-1, i)
-        z += p[i].y * pow(1-t, i) * pow(t, len(p)-1 - i) * comb(len(p)-1, i)
-        i += 1
-    return (x, y, z)
-
-# def interpolate(p1, p2, p3, p4, t):
-#     p12 = (p1[0] * (1-t) + p2[0] * t, p1[1] * (1-t) + p2[1] * t, p1[2] * (1-t) + p2[2] * t)
-#     p23 = (p2[0] * (1-t) + p3[0] * t, p2[1] * (1-t) + p3[1] * t, p2[2] * (1-t) + p3[2] * t)
-#     p34 = (p3[0] * (1-t) + p4[0] * t, p3[1] * (1-t) + p4[1] * t, p3[2] * (1-t) + p4[2] * t)
-#     p123 = (p12[0] * (1-t) + p23[0] * t, p12[1] * (1-t) + p23[1] * t, p12[2] * (1-t) + p23[2] * t)
-#     p234 = (p23[0] * (1-t) + p34[0] * t, p23[1] * (1-t) + p34[1] * t, p23[2] * (1-t) + p34[2] * t)
-#     p1234 = (p123[0] * (1-t) + p234[0] * t, p123[1] * (1-t) + p234[1] * t, p123[2] * (1-t) + p234[2] * t)
-#     return p1234
-
-
+    return (
+        sqrt((pow(col1[0], 2) + pow(col2[0], 2)) / 2),
+        sqrt((pow(col1[1], 2) + pow(col2[1], 2)) / 2),
+        sqrt((pow(col1[2], 2) + pow(col2[2], 2)) / 2),
+    )
 
 
 def bezier(p, t):
@@ -79,9 +59,9 @@ def draw_bezier(path, k=4):
     glBegin(GL_LINES)
     glColor(1, 1, 1, 1)
     glVertex3f(
-        path[0].x * grille.size + grille.size / 2,
+        path[0].x * grille.size * 2 + grille.size / 2,
         path[0].poids,
-        path[0].y * grille.size + grille.size / 2,
+        path[0].y * grille.size * 2 + grille.size / 2,
     )
     i = 0
     while i < len(path):
@@ -89,14 +69,14 @@ def draw_bezier(path, k=4):
         while t < 1:
             bezier_path = bezier(path[i : i + k], t)
             glVertex3f(
-                bezier_path[0] * grille.size + grille.size / 2,
+                bezier_path[0] * grille.size * 2 + grille.size / 2,
                 bezier_path[1],
-                bezier_path[2] * grille.size + grille.size / 2,
+                bezier_path[2] * grille.size * 2 + grille.size / 2,
             )
             glVertex3f(
-                bezier_path[0] * grille.size + grille.size / 2,
+                bezier_path[0] * grille.size * 2 + grille.size / 2,
                 bezier_path[1],
-                bezier_path[2] * grille.size + grille.size / 2,
+                bezier_path[2] * grille.size * 2 + grille.size / 2,
             )
             t += 0.002
         i += k
@@ -124,8 +104,26 @@ class Worm:
     def draw(self, size, quadric):
         """Draws the worm."""
         glColor(1, 1, 0)
-        glTranslatef(size * self.x + size/4, self.y+self.radius, size * self.z + size/4)
+        glTranslatef(
+            size * self.x + size / 4, self.y + self.radius, size * self.z + size / 4
+        )
         gluSphere(quadric, self.radius, 20, 16)
+
+    def follow_bezier(self, path, k=4):
+        self.x = path[0].x
+        self.y = path[0].poids
+        self.z = path[0].y
+        i = 0
+        while i < len(path):
+            t = 0.002
+            while t < 1:
+                bezier_path = bezier(path[i : i + k + 1], t)
+                self.x = bezier_path[0]
+                self.y = bezier_path[1]
+                self.z = bezier_path[2]
+                sleep(0.005)
+                t += 0.002
+            i += k
 
 
 class Case:
@@ -157,9 +155,9 @@ class Case:
         elif self.trav:
             return (sqrt(1 - pow(self.trav, 2)), self.trav, 0)
         # elif self.status == Status.VISITED:
-            # return (self.poids / HEIGHT, 1, 0.6)  # nice toxic waste effect
+        # return (self.poids / HEIGHT, 1, 0.6)  # nice toxic waste effect
         else:
-            return (1, self.poids/HEIGHT, 0.2)
+            return (1, self.poids / HEIGHT, 0.2)
 
     def reset(self):
         """Une fonction qui réinitialise la case."""
@@ -171,7 +169,6 @@ class Case:
         self.start = False
         self.end = False
         self.trav = None
-
 
     def draw(self, size, threshold):
         """Affiche la case à l'écran."""
@@ -205,27 +202,14 @@ class Case:
 
     def bridge_color(self, case):
         """Color a bridge between two cases."""
-        if self.start or self.end or self.trav:
-            if case.start or case.end or case.trav:
-                return average_colors(self.color(), case.color())
-            else:
-                return average_colors((1, self.poids/HEIGHT, 0.2), case.color())
-
-        else:
-            if case.start or case.end or case.trav:
-                return average_colors((1, case.poids/HEIGHT, 0.2), self.color())
-            else:
-                return average_colors(self.color(), case.color())
+        return average_colors(self.color(), case.color())
 
     def bridge_color_diagonal(self, case, opposite):
         """Color a diagonal bridge between two cases."""
-        if self.start or self.end or self.trav:
-            if case.start or case.end or case.trav:
-                return ((n + m) / 2 for n, m in zip(self.color(), case.color()))
-            else:
-                return opposite[0].bridge_color(opposite[1])
-        else:
+        if self.status == Status.NONTRAVERSABLE and case.status == Status.NONTRAVERSABLE:
             return opposite[0].bridge_color(opposite[1])
+        else:
+            return average_colors(case.color(), self.color())
 
     def draw_bridge(self, cases, size):
         """Draw a bridge between a case and all its neighbors."""
@@ -457,16 +441,15 @@ class Grille:
 
     def drawpath(self):
         """Draws the path on the grid, after initalization of the start and end case."""
-        if args.algorithm == 'astar':
+        if args.algorithm == "astar":
             grille.dijkstra(grille.astar, 0)
-        elif args.algorithm == 'dijkstra':
+        elif args.algorithm == "dijkstra":
             grille.dijkstra(grille.smallest, 0)
-        elif args.algorithm == 'breadth':
+        elif args.algorithm == "breadth":
             grille.breadth_first(grille.dep, 0)
         path = self.path()
-        for case in path:
-            case.traverser(path[-1].distance)
-            sleep(0.1)
+
+        self.worm.follow_bezier(path, 3)
 
     def clic_case(self, x, y):
         """Cliquer sur une case."""
@@ -521,38 +504,35 @@ def display():
             1,
             0,
         )
-        glNormal3f(cos(grille.theta/360 * pi * 2), 1, sin(grille.theta/360 * pi * 2))
+        glNormal3f(
+            cos(grille.theta / 360 * pi * 2), 1, sin(grille.theta / 360 * pi * 2)
+        )
         glTranslatef(0, 0, grille.size * grille.worm.z * 2)
         glRotatef(grille.phi, 1, 0, 0)
         glRotatef(grille.theta, 0, 1, 0)
-        glTranslatef(-grille.size * grille.worm.x * 2 - grille.size/2,
-                     -grille.worm.y - grille.worm.radius,
-                     -grille.size * grille.worm.z * 2 - grille.size/2)
+        glTranslatef(
+            -grille.size * grille.worm.x * 2 - grille.size / 2,
+            -grille.worm.y - grille.worm.radius,
+            -grille.size * grille.worm.z * 2 - grille.size / 2,
+        )
 
     # glPushMatrix()
     grille.draw()
     # glPopMatrix()
     if grille.perspective and grille.dep:
         # glPushMatrix()
-        grille.worm.x = grille.dep.x
-        grille.worm.y = grille.dep.poids
-        grille.worm.z = grille.dep.y
-        grille.worm.draw(grille.size*2, quadric)
+        # grille.worm.x = grille.dep.x
+        # grille.worm.y = grille.dep.poids
+        # grille.worm.z = grille.dep.y
+        grille.worm.draw(grille.size * 2, quadric)
         # glPopMatrix()
 
-    glTranslatef(-grille.size * grille.worm.x * 2 - grille.size/2,
-                 # -grille.worm.y - grille.worm.radius,
-                 -grille.worm.radius,
-                 -grille.size * grille.worm.z * 2 - grille.size/2)
-
-    p = grille.path()
-    if p:
-        "p:", draw_bezier(p)
-
-        glTranslatef(grille.size * grille.worm.x * 2 + grille.size/2,
-                     # grille.worm.y + grille.worm.radius,
-                     -grille.worm.radius,
-                     grille.size * grille.worm.z * 2 + grille.size/2)
+    glTranslatef(
+        -grille.size * grille.worm.x * 2 - grille.size / 2,
+        -grille.worm.y - grille.worm.radius,
+        # -grille.worm.radius,
+        -grille.size * grille.worm.z * 2 - grille.size / 2,
+    )
 
     glutSwapBuffers()
 
