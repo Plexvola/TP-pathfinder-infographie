@@ -74,7 +74,6 @@ def init():
         glEnable(GL_DEPTH_TEST)
     else:
         glDisable(GL_DEPTH_TEST)
-    glClearColor(0, 0, 0, 0)
 
 
 def display():
