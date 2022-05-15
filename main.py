@@ -20,6 +20,7 @@ from OpenGL.GLUT import (GLUT_DEPTH, GLUT_DOUBLE, GLUT_RGBA,
                          glutMouseFunc, glutPostRedisplay, glutReshapeFunc,
                          glutReshapeWindow, glutSwapBuffers)
 
+from misc import HEIGHT
 from grid import Grid
 
 
